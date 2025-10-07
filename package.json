@@ -1,6 +1,6 @@
 {
   "name": "frontend",
-  "homepage": "http://hyperlocal-eight.vercel.app/hyperlocal/",
+  "homepage": "http://hyperlocal-eight.vercel.app/",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
