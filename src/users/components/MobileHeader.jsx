@@ -15,7 +15,7 @@ export default function MobileHeader() {
 
   return (
     <div className="flex items-center p-2 bg-[#f2f0f4] justify-between top-0 left-0 drop-shadow-md">
-          <h2 className="text-[#131118] text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pl-12">Hyper Local</h2>
+          <h2 className="text-[#131118] text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pl-12">Fayda Point</h2>
           <div className="flex w-12 items-center justify-end">
             <button
               className="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 bg-transparent text-[#131118] gap-2 text-base font-bold leading-normal tracking-[0.015em] min-w-0 p-0"
