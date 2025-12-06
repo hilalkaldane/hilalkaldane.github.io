@@ -1,18 +1,23 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { HashRouter } from "react-router-dom";
+import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import "./index.css";
 import ReactGA from 'react-ga4'
+import { AnalyticsTracker } from "./AnalyticsTracker";
 
 
-ReactGA.initialize('G-T6CZTM2KPY')
+ReactGA.initialize('G-T6CZTM2KPY',
+{
+  send_page_view: false,
+})
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <HashRouter>
+    <BrowserRouter>
+    <AnalyticsTracker/>
       <div className="app-safe">
         <App />
       </div>
-    </HashRouter>
+    </BrowserRouter>
   </React.StrictMode>
 );
