@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { merchantApi } from "../../services/api";
+import { merchantApi } from "../services/api";
 import MerchantCard from "../components/MerchantCard";
 
 export default function Discover() {

@@ -1,58 +1,65 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { merchantApi, campaignApi } from "../../services/api";
-import { QRCodeCanvas } from "qrcode.react"; // 🔹 QR code lib
+import { merchantApi, campaignApi } from "../services/api";
+import { QRCodeCanvas } from "qrcode.react";
 
 export default function Merchant() {
-  const { id } = useParams();
+  const { merchantNameId } = useParams();
+
   const [merchant, setMerchant] = useState(null);
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const [redeemResult, setRedeemResult] = useState(null);
-  const [couponStatus, setCouponStatus] = useState({});
+
+  // per-campaign coupon state: { [campaignId]: { loading, code, error } }
+  const [campaignCouponState, setCampaignCouponState] = useState({});
 
   const categoryImages = {
     default: "https://source.unsplash.com/400x300/?shopping",
   };
 
-  // 🔹 Load saved coupons on mount
-  useEffect(() => {
-    const savedCoupons = JSON.parse(localStorage.getItem("campaignCoupons") || "{}");
-    setCouponStatus(savedCoupons);
-  }, []);
-
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const m = await merchantApi.getMerchant(id);
+        const m = await merchantApi.getMerchantLocal(merchantNameId);
         setMerchant(m);
 
-        const cs = await campaignApi.listCampaigns(id);
+        const cs = await campaignApi.listCampaignByMerchant(merchantNameId);
+
+        // Map backend fields into UI model
         const mapped = cs.map((c) => ({
           id: c.id,
           name: c.title,
+          campaignType: c.campaignType, // used to decide if coupon button shows
           discountType: c.discount?.includes("%") ? "percentage" : "amount",
           discountValue: c.discount
             ? Number(c.discount.replace(/[^\d]/g, ""))
             : 0,
-          startDate: c.created_at || "",
-          endDate: c.valid_until || "",
+          startDate: c.created_at || c.createdAt || "",
+          endDate: c.valid_until || c.validUntil || "",
           terms: c.description || "",
         }));
+
         setCampaigns(mapped);
       } catch (err) {
-        console.error(err);
+        console.error("Failed to load merchant or campaigns", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
-  }, [id]);
 
-  if (loading) return <div className="p-4">Loading merchant…</div>;
-  if (!merchant)
+    fetchData();
+  }, [merchantNameId]);
+
+  if (loading) {
+    return <div className="p-4">Loading merchant…</div>;
+  }
+
+  if (!merchant) {
     return <div className="p-4 text-red-500">Merchant not found</div>;
+  }
 
   const redeem = async (offer) => {
     setRedeemResult({ loading: true });
@@ -65,37 +72,45 @@ export default function Merchant() {
     }
   };
 
-  const generateCoupon = async (campaignId) => {
-    setCouponStatus((prev) => ({ ...prev, [campaignId]: { loading: true } }));
+  const issueCouponForCampaign = async (campaignId) => {
+    setCampaignCouponState((prev) => ({
+      ...prev,
+      [campaignId]: {
+        ...(prev[campaignId] || {}),
+        loading: true,
+        error: null,
+      },
+    }));
+
     try {
       const coupon = await campaignApi.issueCouponForCampaign(campaignId);
+      // Expecting backend to return something like { code: "XYZ123", ... }
 
-      // 🔹 Build new entry including merchantId, campaignId, couponCode
-      const newEntry = {
-        merchantId: merchant.id,
-        campaignId,
-        code: coupon.code,
-      };
-
-      // 🔹 Merge into state
-      const newStatus = {
-        ...couponStatus,
-        [campaignId]: { loading: false, ...newEntry },
-      };
-      setCouponStatus(newStatus);
-
-      // 🔹 Persist to localStorage
-      localStorage.setItem("campaignCoupons", JSON.stringify(newStatus));
-    } catch (err) {
-      setCouponStatus((prev) => ({
+      setCampaignCouponState((prev) => ({
         ...prev,
-        [campaignId]: { loading: false, error: err.message },
+        [campaignId]: {
+          ...prev[campaignId],
+          loading: false,
+          code: coupon.couponCode,
+          error: null,
+        },
+      }));
+    } catch (err) {
+      setCampaignCouponState((prev) => ({
+        ...prev,
+        [campaignId]: {
+          ...prev[campaignId],
+          loading: false,
+          code: null,
+          error: err.message || "Failed to generate coupon",
+        },
       }));
     }
   };
 
   return (
     <div className="px-4 pb-24 pt-2">
+      {/* Header */}
       <div className="mt-2 mb-3">
         <div className="text-xl font-semibold">{merchant.name}</div>
         {(merchant.distanceKm || merchant.tagline) && (
@@ -107,21 +122,24 @@ export default function Merchant() {
         )}
       </div>
 
+      {/* Hero image */}
       <div
-        className="w-full h-40 rounded-md mb-4 bg-center bg-cover"
+        className="mb-4 h-40 w-full rounded-md bg-cover bg-center"
         style={{
-          backgroundImage: `url(${merchant.category.image || categoryImages.default
-            }${"?w=416&h=160&fit=crop&q=80&auto=format"})`,
+          backgroundImage: `url(${
+            merchant.profile || categoryImages.default
+          }${"?w=416&h=160&fit=crop&q=80&auto=format"})`,
         }}
       />
 
+      {/* Legacy offers (if still used) */}
       {Array.isArray(merchant.offers) && merchant.offers.length > 0 && (
         <div>
-          <h3 className="font-semibold mb-2">Offers</h3>
+          <h3 className="mb-2 font-semibold">Offers</h3>
           <div className="space-y-3">
             {merchant.offers.map((o) => (
-              <div key={o.id} className="p-3 border rounded-lg bg-white">
-                <div className="flex justify-between items-center">
+              <div key={o.id} className="rounded-lg border bg-white p-3">
+                <div className="flex items-center justify-between">
                   <div>
                     <div className="font-semibold">{o.title}</div>
                     {o.expires && (
@@ -133,7 +151,7 @@ export default function Merchant() {
                   <div>
                     <button
                       onClick={() => redeem(o)}
-                      className="px-4 py-2 bg-black text-white rounded-md"
+                      className="rounded-md bg-black px-4 py-2 text-white"
                     >
                       Get Code
                     </button>
@@ -155,79 +173,104 @@ export default function Merchant() {
         </div>
       )}
 
+      {/* Campaigns with coupon issue + QR */}
       {Array.isArray(campaigns) && campaigns.length > 0 && (
         <div className="mt-6">
-          <h3 className="font-semibold mb-2">Campaigns</h3>
+          <h3 className="mb-2 font-semibold">Campaigns</h3>
           <div className="space-y-3">
             {campaigns.map((c) => {
-              const status = couponStatus[c.id] || {};
+              const state = campaignCouponState[c.id] || {};
+
               return (
-                <div key={c.id} className="p-3 border rounded-lg bg-white flex justify-between">
+                <div
+                  key={c.id}
+                  className="flex justify-between rounded-lg border bg-white p-3"
+                >
                   {/* Left Column - Campaign Details */}
                   <div className="flex-1 pr-4">
                     <div className="font-semibold">{c.name}</div>
-                    <div className="text-sm text-gray-700 mt-1">
+                    <div className="mt-1 text-sm text-gray-700">
                       {c.discountType === "percentage"
                         ? `${c.discountValue}% off`
                         : c.discountType === "amount"
-                          ? `₹${c.discountValue} off`
-                          : ""}
+                        ? `₹${c.discountValue} off`
+                        : ""}
                     </div>
                     {(c.startDate || c.endDate) && (
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="mt-1 text-xs text-gray-500">
                         Valid from {c.startDate} to {c.endDate}
                       </div>
                     )}
                     {c.terms && (
-                      <div className="text-xs text-gray-500 mt-2 whitespace-pre-wrap">
+                      <div className="mt-2 whitespace-pre-wrap text-xs text-gray-500">
                         {c.terms}
                       </div>
                     )}
                   </div>
 
-                  {/* Right Column - Redeem or QR */}
-                  <div className="flex flex-col items-center justify-center w-40">
-                    {status.code ? (
+                  {/* Right Column - Coupon (only for COUPON type) */}
+                  <div className="flex w-40 flex-col items-center justify-center">
+                    {c.campaignType === "COUPON" ? (
                       <>
-                        <div className="text-green-700 font-medium mb-1 text-center">
-                          Redeemed!
-                        </div>
-                        <QRCodeCanvas 
-                          value={JSON.stringify({
-                            merchantId: status.merchantId,
-                            campaignId: status.campaignId,
-                            couponCode: status.code,
-                          })}
-                          size={96}
-                          includeMargin={false}
-                        />
-                        <div className="mt-1 text-xs text-gray-700">Code: {status.code}</div>
+                        {state.code ? (
+                          <>
+                            <div className="mb-1 text-center text-sm font-medium text-green-700">
+                              Coupon issued
+                            </div>
+
+                            <QRCodeCanvas
+                              value={JSON.stringify({
+                                merchantNameId:
+                                  merchant.merchantNameId ||
+                                  merchant.merchantId ||
+                                  merchant.id,
+                                campaignId: c.id,
+                                couponCode: state.code,
+                              })}
+                              size={96}
+                            />
+
+                            <div className="mt-1 text-xs text-gray-800">
+                              Code:{" "}
+                              <span className="font-mono">
+                                {state.code}
+                              </span>
+                            </div>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => issueCouponForCampaign(c.id)}
+                            disabled={state.loading}
+                            className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white disabled:opacity-60"
+                          >
+                            {state.loading ? "Generating..." : "Generate Code"}
+                          </button>
+                        )}
+
+                        {state.error && (
+                          <div className="mt-1 text-xs text-red-600">
+                            {state.error}
+                          </div>
+                        )}
                       </>
                     ) : (
-                      <button
-                        onClick={() => generateCoupon(c.id)}
-                        disabled={status.loading}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-md"
-                      >
-                        {status.loading ? "Generating..." : "Generate Coupon"}
-                      </button>
-                    )}
-                    {status.error && (
-                      <div className="mt-2 text-red-600 text-sm">Error: {status.error}</div>
+                      <div className="text-xs text-gray-500">
+                        Non-coupon campaign
+                      </div>
                     )}
                   </div>
                 </div>
               );
             })}
-
           </div>
         </div>
       )}
 
+      {/* Extra merchant details if present */}
       {merchant.details && (
         <div className="mt-6">
           <h4 className="font-semibold">Details</h4>
-          <p className="text-sm text-gray-600 mt-2">{merchant.details}</p>
+          <p className="mt-2 text-sm text-gray-600">{merchant.details}</p>
         </div>
       )}
     </div>

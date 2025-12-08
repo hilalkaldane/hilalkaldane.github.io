@@ -1,6 +1,6 @@
 // src/pages/admin/AdminDashboard.jsx
 import React, { useState, useEffect } from "react";
-import { adminApi, categoryApi } from "../../services/api";
+import { adminApi, categoryApi } from "../../users/services/api";
 
 const { adminResetData } = adminApi;
 

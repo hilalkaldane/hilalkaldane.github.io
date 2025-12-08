@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { campaignApi } from "../../services/api";
+import { campaignApi } from "../../users/services/api";
 import QrScanner from "react-qr-scanner"; // 🔹 swapped library
 
 function useQuery() {

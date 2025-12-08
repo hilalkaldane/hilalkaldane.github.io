@@ -1,53 +1,61 @@
 import React, { useEffect, useState } from "react";
-import { merchantApi } from "../../services/api";
-import { useLocation, useParams } from "react-router-dom";
 import Chart from "react-apexcharts";
+import { merchantProtectedApi } from "../services/merchantApi";
 
-function useQuery() {
-  return new URLSearchParams(useLocation().search);
-}
 export default function Dashboard() {
-
-  const query = useQuery();
-  const merchantId = query.get('merchantId');
+  const merchantId = localStorage.getItem("merchantUserIdPk");
   const [chartData, setChartData] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const fetchData = async () => {
-    console.log("Dashboard" + "" + merchantId)
     if (!merchantId) return;
     setLoading(true);
     try {
-      const res = await merchantApi.dashboardMonthly(merchantId);
-      setChartData(res);
+      const res = await merchantProtectedApi.getMonthlyDashboardByDay(10);
+      // expect res to be an array of { day, views, issuances, redemptions }
+      setChartData(res || []);
     } catch (err) {
-      setChartData(null);
+      console.error(err);
+      setChartData([]);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchData(); }, [merchantId]);
+  useEffect(() => {
+    fetchData();
+  }, [merchantId]);
 
   if (loading) return <div className="p-4">Loading chart…</div>;
-  if (!chartData) return <div className="p-4">No data</div>;
+  if (!chartData || chartData.length === 0)
+    return <div className="p-4">No data</div>;
 
-  const totalIssued = chartData.issued.reduce((a, b) => a + b, 0);
-  const totalRedeemed = chartData.redeemed.reduce((a, b) => a + b, 0);
+  const totalIssued = chartData.reduce((sum, d) => sum + d.issuances, 0);
+  const totalRedeemed = chartData.reduce((sum, d) => sum + d.redemptions, 0);
+
+  const dates = chartData.map((d) => {
+    const date = new Date(d.day);
+    return date.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+    });
+  });
+  const issuedData = chartData.map((d) => d.issuances);
+  const redeemedData = chartData.map((d) => d.redemptions);
 
   const series = [
-    { name: "Issued", data: chartData.issued },
-    { name: "Redeemed", data: chartData.redeemed }
+    { name: "Issued", data: issuedData },
+    { name: "Redeemed", data: redeemedData },
   ];
 
   const options = {
     chart: { type: "line", height: 300 },
-    xaxis: { categories: chartData.dates },
+    xaxis: { categories: dates },
     colors: ["#A78BFA", "#60A5FA"],
     dataLabels: { enabled: false },
     stroke: { curve: "smooth" },
     grid: { borderColor: "#eee" },
-    tooltip: { shared: true }
+    tooltip: { shared: true },
   };
 
   return (
@@ -57,16 +65,23 @@ export default function Dashboard() {
         <div className="flex items-center justify-between">
           <div className="flex flex-col items-center flex-1">
             <span className="text-sm font-medium text-gray-600">Issued</span>
-            <span className="text-2xl font-bold text-purple-600">{totalIssued}</span>
+            <span className="text-2xl font-bold text-purple-600">
+              {totalIssued}
+            </span>
           </div>
           <div className="flex flex-col items-center flex-1">
             <span className="text-sm font-medium text-gray-600">Redeemed</span>
-            <span className="text-2xl font-bold text-blue-600">{totalRedeemed}</span>
+            <span className="text-2xl font-bold text-blue-600">
+              {totalRedeemed}
+            </span>
           </div>
         </div>
       </div>
+
       <div className="p-4 bg-white border rounded mx-auto min-h-md">
-        <h3 className="text-lg font-semibold mb-3">Issued vs Redeemed (Past 10 Days)</h3>
+        <h3 className="text-lg font-semibold mb-3">
+          Issued vs Redeemed (Past 30 Days)
+        </h3>
         <Chart options={options} series={series} type="line" height={300} />
       </div>
     </div>

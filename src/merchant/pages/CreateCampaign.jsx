@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useParams } from "react-router-dom";
-import { campaignApi } from "../../services/api";
+import { campaignApi } from "../../users/services/api";
 
 function useQuery() {
   return new URLSearchParams(useLocation().search);

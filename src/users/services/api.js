@@ -1,10 +1,12 @@
 // src/services/api.js
 import { createClient } from "@supabase/supabase-js";
-import { CATEGORIES, MERCHANTS } from "../data/sampleData.js";
+import { CATEGORIES, MERCHANTS } from "../../data/sampleData.js";
+import { httpGet, httpPost } from "./httpClient.js";
 
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
 const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
 export const supabase = createClient(supabaseUrl, supabaseKey);
+const API_BASE_URL = "http://localhost:8080"
 
 // --- INIT DATA ---
 export async function initData() {
@@ -41,10 +43,8 @@ export async function initData() {
 // ---------------- CATEGORY API ----------------
 export const categoryApi = {
   async listCategories() {
-    const { data, error } = await supabase.from("categories").select("*").order("id", { ascending: true });
-    if (error) throw error;
-    return data;
-  },
+    return await httpGet('/api/metadata/listCategoriesAndSubcategories')
+  }
 };
 
 // ---------------- MERCHANT API ----------------
@@ -73,7 +73,16 @@ export const merchantApi = {
       category: merchant.categories || null,
     };
   },
+  getMerchantLocal: async (id) => {
+    if (!id) throw new Error("Merchant ID is required");
 
+    const merchant = await httpGet(`/api/merchant/${id}`)
+
+    return {
+      ...merchant,
+      category: merchant.category || null,
+    };
+  },
   async dashboardMonthly(merchantId) {
 if (!merchantId) throw new Error("Merchant ID required");
 
@@ -136,8 +145,18 @@ if (!merchantId) throw new Error("Merchant ID required");
 
 };
 
+export const feedApi = {
+  getFeed: async()=>
+  {
+    return await httpGet(`/api/feed/updatedFeed`)
+  }
+};
+
 // ---------------- CAMPAIGN API ----------------
 export const campaignApi = {
+  getActiveCampaigns: async () => {
+    return await httpGet(`api/campaigns/active-campaigns`)
+  }, 
   async listAllCampaigns() {
     const { data, error } = await supabase
       .from("campaigns")
@@ -146,49 +165,13 @@ export const campaignApi = {
     if (error) throw error;
     return data;
   },
-  async listCampaigns(merchantId) {
-    const { data, error } = await supabase
-      .from("campaigns")
-      .select("*, merchants(name)")
-      .eq("merchant_id", merchantId)
-      .order("id", { ascending: true });
-    if (error) throw error;
-    return data;
+  async listCampaignByMerchant(merchantId) {
+    return await httpGet(`/api/campaigns/merchant/${merchantId}`)
   },
 
   // Placeholder for issuing coupons / redeeming
   async issueCouponForCampaign(campaignId) {
-    if (!campaignId) throw new Error("campaignId is required");
-
-    let code;
-    let inserted = null;
-    let attempts = 0;
-
-    // Retry in case of duplicate key (very rare)
-    while (!inserted && attempts < 5) {
-      attempts++;
-      code = generateRandomCode(8);
-
-      const { data, error } = await supabase
-        .from("coupons")
-        .insert([{ code, campaign_id: campaignId }])
-        .select()
-        .single();
-
-      if (error) {
-        if (error.code === "23505") {
-          // duplicate primary key, retry
-          continue;
-        } else {
-          throw error;
-        }
-      }
-      inserted = data;
-    }
-
-    if (!inserted) throw new Error("Failed to generate unique coupon code after 5 attempts");
-
-    return inserted; // returns { code, campaign_id, issued_at, redeemed_at }
+    return await httpPost(`/api/redemption/${campaignId}/issue`)
   },
 
   async redeemCoupon(merchantId, couponCode) {

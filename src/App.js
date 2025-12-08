@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
-import { initData } from "./services/api";   // 👈 import the seeding function
 
 // Customer pages
-import Categories from "./users/pages/Categories";
 import Discover from "./users/pages/Discover";
 import Merchant from "./users/pages/Merchant";
 import Profile from "./users/pages/Profile";
@@ -11,15 +9,15 @@ import BottomTabBar from "./users/components/BottomTabBar";
 import MobileHeader from "./users/components/MobileHeader";
 
 // Merchant pages
-import Dashboard from "./merchant/pages/Dashboard";
-import CreateCampaign from "./merchant/pages/CreateCampaign";
-import RedeemCoupon from "./merchant/pages/RedeemCoupon";
 import MerchantBottomTabBar from "./merchant/components/MerchantBottomTabBar";
 
 // Admin pages
 import AdminDashboard from "./admin/pages/AdminDashboard";
 import AdminBottomTabBar from "./admin/components/AdminBottomTabBar";
 import HomePage from "./users/pages/HomePage";
+import MerchantApp from "./merchant/MerchantApp";
+import RequireMerchantAuth from "./merchant/auth/requireMerchantAuth";
+import MerchantLogin from "./merchant/pages/MerchantLogin";
 
 export default function App() {
   const loc = useLocation();
@@ -61,19 +59,19 @@ export default function App() {
         className={`${!isMerchantRoute && !isAdminRoute ? "" : ""
           } overflow-auto`}
       >
+        
         <Routes>
+          <Route path="/merchant-login" element={<MerchantLogin/>}/>
           {/* Customer routes */}
-          <Route path="/" element={<Categories />} />
+          <Route path="/" element={<HomePage />} />
           <Route path="/discover/:category?" element={<Discover />} />
-          <Route path="/merchant/:id" element={<Merchant />} />
+          <Route path="/merchant/:merchantNameId" element={<Merchant />} />
           <Route path="/profile" element={<Profile />} />
 
           {/* Merchant routes */}
-          <Route path="/client" element={<Dashboard />} />
-          <Route path="/client/dashboard" element={<Dashboard />} />
-          <Route path="/client/create-campaign/" element={<CreateCampaign />} />
-          <Route path="/client/redeem-coupon/" element={<RedeemCoupon />} />
-
+        <Route element={<RequireMerchantAuth />}>
+          <Route path="/client/*" element={<MerchantApp />} />
+        </Route>
           {/* Admin routes */}
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
