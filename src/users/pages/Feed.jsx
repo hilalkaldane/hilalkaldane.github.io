@@ -12,7 +12,7 @@ function SkeletonCard() {
   );
 }
 
-export default function HomePage() {
+export default function Feed() {
   const [categoryList, setCategoryList] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
 
@@ -22,13 +22,13 @@ export default function HomePage() {
   // merchantNameId -> merchant data
   const [merchantByNameIdMap, setMerchantByNameIdMap] = useState({});
 
-  // null = All categories
-  const [selectedCategoryCode, setSelectedCategoryCode] = useState(null);
+  // [] = All categories; otherwise multiselect list of categoryCodes
+  const [selectedCategoryCodes, setSelectedCategoryCodes] = useState([]);
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchHomePageData = async () => {
+    const fetchFeedData = async () => {
       setCategoriesLoading(true);
       setFeedLoading(true);
 
@@ -104,28 +104,35 @@ export default function HomePage() {
       }
     };
 
-    fetchHomePageData();
+    fetchFeedData();
   }, []);
 
-  // Filter campaigns by selected category (via merchant.category)
-  const filteredCampaigns =
-    selectedCategoryCode == null
-      ? feedCampaigns
-      : feedCampaigns.filter((campaign) => {
-          const merchant = merchantByNameIdMap[campaign.merchantNameId];
-          if (!merchant) return false;
-          return merchant.category === selectedCategoryCode;
-        });
+  const isAllSelected = selectedCategoryCodes.length === 0;
 
   const handleSelectAll = () => {
-    setSelectedCategoryCode(null);
+    setSelectedCategoryCodes([]); // reset to "All"
   };
 
-  const handleSelectCategory = (categoryCode) => {
-    setSelectedCategoryCode(categoryCode);
+  const handleToggleCategory = (categoryCode) => {
+    setSelectedCategoryCodes((prev) => {
+      if (prev.includes(categoryCode)) {
+        // remove if already selected
+        const next = prev.filter((code) => code !== categoryCode);
+        return next;
+      }
+      // add new selection
+      return [...prev, categoryCode];
+    });
   };
 
-  const isAllSelected = selectedCategoryCode == null;
+  // Filter campaigns by selected categories (via merchant.category)
+  const filteredCampaigns = isAllSelected
+    ? feedCampaigns
+    : feedCampaigns.filter((campaign) => {
+        const merchant = merchantByNameIdMap[campaign.merchantNameId];
+        if (!merchant) return false;
+        return selectedCategoryCodes.includes(merchant.category);
+      });
 
   return (
     <div className="no-scrollbar mx-auto max-w-4xl pb-16">
@@ -147,16 +154,15 @@ export default function HomePage() {
 
         {/* Category pills */}
         {categoryList.map((category) => {
-          const isSelected =
-            selectedCategoryCode === category.categoryCode;
+          const isSelected = selectedCategoryCodes.includes(
+            category.categoryCode
+          );
 
           return (
             <button
               key={category.id || category.categoryCode}
               type="button"
-              onClick={() =>
-                handleSelectCategory(category.categoryCode)
-              }
+              onClick={() => handleToggleCategory(category.categoryCode)}
               className={[
                 "flex h-8 items-center rounded-xl px-4 text-sm font-medium border",
                 isSelected
@@ -185,7 +191,7 @@ export default function HomePage() {
           <p className="px-4 pt-2 text-gray-600">
             {isAllSelected
               ? "No trending deals at the moment."
-              : "No trending deals in this category."}
+              : "No trending deals in these categories."}
           </p>
         ) : (
           filteredCampaigns.map((campaign) => {

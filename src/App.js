@@ -14,7 +14,7 @@ import MerchantBottomTabBar from "./merchant/components/MerchantBottomTabBar";
 // Admin pages
 import AdminDashboard from "./admin/pages/AdminDashboard";
 import AdminBottomTabBar from "./admin/components/AdminBottomTabBar";
-import HomePage from "./users/pages/HomePage";
+import Feed from "./users/pages/Feed";
 import MerchantApp from "./merchant/MerchantApp";
 import RequireMerchantAuth from "./merchant/auth/requireMerchantAuth";
 import MerchantLogin from "./merchant/pages/MerchantLogin";
@@ -63,7 +63,7 @@ export default function App() {
         <Routes>
           <Route path="/merchant-login" element={<MerchantLogin/>}/>
           {/* Customer routes */}
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<Feed />} />
           <Route path="/discover/:category?" element={<Discover />} />
           <Route path="/merchant/:merchantNameId" element={<Merchant />} />
           <Route path="/profile" element={<Profile />} />

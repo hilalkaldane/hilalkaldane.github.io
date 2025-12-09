@@ -1,71 +1,47 @@
-import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
-import { campaignApi } from "../../users/services/api";
-import QrScanner from "react-qr-scanner"; // 🔹 swapped library
+// src/pages/RedeemCoupon.jsx (or similar)
 
-function useQuery() {
-  return new URLSearchParams(useLocation().search);
-}
+import React, { useState } from "react";
+import QrScanner from "react-qr-scanner";
+import { merchantProtectedApi } from "../services/merchantApi.js";
 
 export default function RedeemCoupon() {
-  const query = useQuery();
-  const merchantId = query.get("merchantId");
+  const merchantNameId = localStorage.getItem("merchantNameId");
 
-  const [code, setCode] = useState("");
   const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [campaigns, setCampaigns] = useState([]);
   const [scanning, setScanning] = useState(false);
 
-  useEffect(() => {
-    if (!merchantId) return;
-    campaignApi
-      .listCampaigns(merchantId)
-      .then(setCampaigns)
-      .catch(() => {});
-  }, [merchantId]);
-
-  const handleRedeem = async (couponCode) => {
-    setLoading(true);
-    setResult(null);
-    try {
-      const res = await campaignApi.redeemCoupon(merchantId, couponCode.trim());
-      setResult({ success: true, ...res });
-    } catch (e) {
-      setResult({ success: false, message: e.message });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleIssue = async (campaignId) => {
-    setLoading(true);
-    try {
-      const c = await campaignApi.issueCouponForCampaign(campaignId);
-      alert(`Issued coupon: ${c.code}`);
-    } catch (e) {
-      alert("Issue failed: " + e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [modalOpen, setModalOpen] = useState(false);
+  const [scannedData, setScannedData] = useState(null); // { couponCode, campaignId, campaignTitle }
+  const [billAmount, setBillAmount] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const handleScan = async (scanResult) => {
     if (!scanResult || !scanResult.text) return;
 
     try {
       const parsed = JSON.parse(scanResult.text);
-      console.log(parsed)
-      if (parsed.merchantId != merchantId) {
+      console.log(parsed);
+
+      if (String(parsed.merchantNameId) !== String(merchantNameId)) {
         setResult({
           success: false,
           message: "Merchant mismatch – invalid QR code",
         });
         return;
       }
-      await handleRedeem(parsed.couponCode);
-      setScanning(false); // stop camera after success
+
+      // Stop scanner while confirming
+      setScanning(false);
+
+      setScannedData({
+        couponCode: parsed.couponCode,
+        campaignId: parsed.campaignId,
+        campaignTitle: parsed.campaignTitle || "Campaign",
+      });
+      setBillAmount("");
+      setModalOpen(true);
     } catch (err) {
+      console.error("QR parse error:", err);
       setResult({ success: false, message: "Invalid QR format" });
     }
   };
@@ -74,32 +50,50 @@ export default function RedeemCoupon() {
     console.error("QR Scan error:", err);
   };
 
+  const handleRedeemConfirm = async () => {
+    if (!scannedData) return;
+
+    const parsedBill = parseFloat(billAmount);
+    const bill = Number.isFinite(parsedBill) ? parsedBill : 0;
+
+    const payload = {
+      campaignId: scannedData.campaignId,          // UUID string from QR
+      couponCode: scannedData.couponCode,
+      billAmount: bill,
+      extras: {
+        source: "qr",
+        merchantNameId,
+      },
+    };
+
+    setSubmitting(true);
+    setResult(null);
+
+    try {
+      const res = await merchantProtectedApi.redeemCoupon(payload);
+      // res is RedemptionSuccessfulResponse from backend (via ApiResponse.data)
+      setResult({
+        success: true,
+        message: res?.message || "Coupon redeemed successfully",
+      });
+      setModalOpen(false);
+      setScannedData(null);
+      setBillAmount("");
+    } catch (e) {
+      setResult({ success: false, message: e.message });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="p-4">
-      <h2 className="text-xl font-semibold mb-3">Validate & Redeem</h2>
-
-      {/* Manual entry */}
-      <div className="mb-3">
-        <label className="block text-sm mb-1">Enter coupon code</label>
-        <input
-          className="w-full p-2 border rounded"
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-        />
-      </div>
-
-      <button
-        onClick={() => handleRedeem(code)}
-        className="w-full py-2 bg-black text-white rounded mb-3"
-        disabled={loading}
-      >
-        {loading ? "Checking…" : "Validate & Redeem"}
-      </button>
+      <h2 className="mb-3 text-xl font-semibold">Redeem via QR</h2>
 
       {/* QR Scanner Toggle */}
       <button
         onClick={() => setScanning((s) => !s)}
-        className="w-full py-2 bg-blue-600 text-white rounded mb-3"
+        className="mb-3 w-full rounded bg-blue-600 py-2 text-white"
       >
         {scanning ? "Stop Scanner" : "Scan QR Code"}
       </button>
@@ -110,7 +104,7 @@ export default function RedeemCoupon() {
             delay={300}
             style={{ width: "100%", height: "50vh" }}
             onError={handleError}
-            onScan={(data) => handleScan(data)}
+            onScan={handleScan}
             constraints={{ video: { facingMode: "environment" } }}
           />
         </div>
@@ -118,46 +112,69 @@ export default function RedeemCoupon() {
 
       {result && (
         <div
-          className={`p-3 rounded border ${
+          className={`rounded border p-3 ${
             result.success
-              ? "bg-green-50 border-green-200"
-              : "bg-red-50 border-red-200"
+              ? "border-green-200 bg-green-50"
+              : "border-red-200 bg-red-50"
           }`}
         >
           <div className="font-semibold">
             {result.success ? "Redeemed" : "Error"}
           </div>
-          <div className="text-sm">
-            {result.success ? `Code: ${result.code}` : result.message}
+          <div className="text-sm">{result.message}</div>
+        </div>
+      )}
+
+      {/* Modal: confirm redemption */}
+      {modalOpen && scannedData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-sm rounded-lg bg-white p-4 shadow-lg">
+            <h3 className="mb-2 text-lg font-semibold">
+              Redeem {scannedData.campaignTitle}
+            </h3>
+            <div className="mb-1 text-xs text-gray-600">
+              Coupon code: <span className="font-mono">{scannedData.couponCode}</span>
+            </div>
+
+            <div className="mt-3 mb-3">
+              <label className="mb-1 block text-sm">Bill amount</label>
+              <input
+                type="number"
+                className="w-full rounded border p-2 text-sm"
+                value={billAmount}
+                onChange={(e) => setBillAmount(e.target.value)}
+                min="0"
+                step="0.01"
+              />
+            </div>
+
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                className="rounded border px-3 py-1 text-sm"
+                onClick={() => {
+                  setModalOpen(false);
+                  setScannedData(null);
+                  setBillAmount("");
+                }}
+                disabled={submitting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="rounded bg-black px-3 py-1 text-sm text-white disabled:opacity-60"
+                onClick={handleRedeemConfirm}
+                disabled={submitting}
+              >
+                {submitting ? "Redeeming…" : "Redeem"}
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       <hr className="my-4" />
-
-      {/* Quick Issue Section */}
-      <div>
-        <h3 className="font-semibold mb-2">Quick Issue (simulate check-in)</h3>
-        <div className="space-y-2">
-          {campaigns.map((c) => (
-            <div
-              key={c.id}
-              className="flex items-center justify-between p-2 border rounded"
-            >
-              <div>
-                <div className="font-medium">{c.title}</div>
-                <div className="text-xs text-gray-500">{c.discount}</div>
-              </div>
-              <button
-                onClick={() => handleIssue(c.id)}
-                className="px-3 py-1 bg-blue-600 text-white rounded"
-              >
-                Issue
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

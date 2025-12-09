@@ -31,7 +31,7 @@ export default function Merchant() {
         // Map backend fields into UI model
         const mapped = cs.map((c) => ({
           id: c.id,
-          name: c.title,
+          title: c.title,
           campaignType: c.campaignType, // used to decide if coupon button shows
           discountType: c.discount?.includes("%") ? "percentage" : "amount",
           discountValue: c.discount
@@ -85,7 +85,7 @@ export default function Merchant() {
     try {
       const coupon = await campaignApi.issueCouponForCampaign(campaignId);
       // Expecting backend to return something like { code: "XYZ123", ... }
-
+      
       setCampaignCouponState((prev) => ({
         ...prev,
         [campaignId]: {
@@ -188,7 +188,7 @@ export default function Merchant() {
                 >
                   {/* Left Column - Campaign Details */}
                   <div className="flex-1 pr-4">
-                    <div className="font-semibold">{c.name}</div>
+                    <div className="font-semibold">{c.title}</div>
                     <div className="mt-1 text-sm text-gray-700">
                       {c.discountType === "percentage"
                         ? `${c.discountValue}% off`
@@ -217,7 +217,7 @@ export default function Merchant() {
                             <div className="mb-1 text-center text-sm font-medium text-green-700">
                               Coupon issued
                             </div>
-
+                          
                             <QRCodeCanvas
                               value={JSON.stringify({
                                 merchantNameId:
@@ -226,6 +226,7 @@ export default function Merchant() {
                                   merchant.id,
                                 campaignId: c.id,
                                 couponCode: state.code,
+                                campaignTitle: c.title
                               })}
                               size={96}
                             />

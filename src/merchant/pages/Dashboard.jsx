@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from "react";
 import Chart from "react-apexcharts";
-import { merchantProtectedApi } from "../services/merchantApi";
+import { merchantProtectedApi, redirectToMerchantLogin } from "../services/merchantApi";
 
 export default function Dashboard() {
-  const merchantId = localStorage.getItem("merchantUserIdPk");
+  const merchantId = localStorage.getItem("merchantIdPk");
   const [chartData, setChartData] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const fetchData = async () => {
-    if (!merchantId) return;
+    if (!merchantId)
+    {
+      redirectToMerchantLogin()
+    }
     setLoading(true);
     try {
       const res = await merchantProtectedApi.getMonthlyDashboardByDay(10);

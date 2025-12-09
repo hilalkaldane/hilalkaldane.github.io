@@ -12,9 +12,9 @@ export default function MerchantBottomTabBar() {
   const query = useQuery();
   const merchantId = query.get('merchantId');
   const tabs = [
-    { to: `/client/dashboard?merchantId=${merchantId}`, label: "Dashboard", icon: <FiBarChart2 /> },
-    { to: `/client/create-campaign?merchantId=${merchantId}`, label: "Create", icon: <FiPlusSquare /> },
-    { to: `/client/redeem-coupon?merchantId=${merchantId}`, label: "Validate", icon: <FiCheckSquare /> },
+    { to: `/client/dashboard`, label: "Dashboard", icon: <FiBarChart2 /> },
+    { to: `/client/create-campaign`, label: "Create", icon: <FiPlusSquare /> },
+    { to: `/client/redeem-coupon`, label: "Validate", icon: <FiCheckSquare /> },
   ];
 
   return (
