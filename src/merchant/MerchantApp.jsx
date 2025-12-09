@@ -7,6 +7,7 @@ import RedeemCoupon from "./pages/RedeemCoupon"
 export default function MerchantApp() {
   return (
     <Routes>
+            <Route path="/" element={<Dashboard />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/create-campaign/" element={<CreateCampaign />} />
             <Route path="/redeem-coupon/" element={<RedeemCoupon />} />

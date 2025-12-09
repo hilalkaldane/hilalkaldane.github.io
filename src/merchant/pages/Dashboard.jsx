@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Chart from "react-apexcharts";
-import { merchantProtectedApi, redirectToMerchantLogin } from "../services/merchantApi";
+import { merchantProtectedApi, redirectToMerchantLogin } from "../services/merchantProtectedApi";
 
 export default function Dashboard() {
   const merchantId = localStorage.getItem("merchantIdPk");
@@ -12,6 +12,7 @@ export default function Dashboard() {
     {
       redirectToMerchantLogin()
     }
+    console.log(merchantId)
     setLoading(true);
     try {
       const res = await merchantProtectedApi.getMonthlyDashboardByDay(10);

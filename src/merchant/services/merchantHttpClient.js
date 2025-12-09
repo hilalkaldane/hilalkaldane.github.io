@@ -2,7 +2,7 @@
 // Minimal fetch wrappers: publicFetch (no auth) and merchantFetch (adds Authorization if present)
 
 import { clearMerchantAuth } from "../auth/merchantAuth";
-import { redirectToMerchantLogin } from "./merchantApi.js";
+import { redirectToMerchantLogin } from "./merchantProtectedApi.js";
 import { getOrCreateDeviceId } from "./merchantDevice";
 
 const API_BASE = "http://192.168.1.104:8080";

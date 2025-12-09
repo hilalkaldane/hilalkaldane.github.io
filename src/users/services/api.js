@@ -248,6 +248,17 @@ export const adminApi = {
   },
 };
 
+// sketch, not required but implied
+export const customerApi = {
+  getMe: () => httpGet("/api/customer/me"),
+  updateMe: (payload) =>
+    httpGet("/api/customer/me", {
+      method: "PUT",
+      body: payload,
+    }),
+};
+
+
 function generateRandomCode(length = 8) {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let result = "";

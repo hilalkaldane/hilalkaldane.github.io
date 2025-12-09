@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import QrScanner from "react-qr-scanner";
-import { merchantProtectedApi } from "../services/merchantApi.js";
+import { merchantProtectedApi } from "../services/merchantProtectedApi";
 
 export default function RedeemCoupon() {
   const merchantNameId = localStorage.getItem("merchantNameId");

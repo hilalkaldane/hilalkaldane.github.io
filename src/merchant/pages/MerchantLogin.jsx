@@ -1,8 +1,8 @@
 // src/client/pages/Login.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { merchantAuthApi } from "../services/merchantApi.js";
-import { saveMerchantAuth } from "../auth/merchantAuth.js";
+import { saveMerchantAuth } from "../auth/merchantAuth";
+import { merchantAuthApi } from "../services/merchantProtectedApi";
 
 export default function MerchantLogin() {
   const navigate = useNavigate();

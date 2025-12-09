@@ -36,6 +36,11 @@ export const merchantProtectedApi = {
       method: "POST",
       body: payload,
     }),
+  createCampaign: async( payload )=>
+    merchantFetch(`/api/campaigns/logged-in-merchant/create`, {
+      method: "POST",
+      body: payload,
+    }),
 };
 
 export function redirectToMerchantLogin() {

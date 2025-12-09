@@ -3,6 +3,47 @@ import { useParams } from "react-router-dom";
 import { merchantApi, campaignApi } from "../services/api";
 import { QRCodeCanvas } from "qrcode.react";
 
+const ISSUED_COUPONS_STORAGE_KEY = "issuedCoupons";
+
+// Read issued coupons for this merchant from localStorage
+function loadIssuedCouponsForMerchant(merchantNameId) {
+  try {
+    const raw = localStorage.getItem(ISSUED_COUPONS_STORAGE_KEY);
+    if (!raw) return {};
+    const all = JSON.parse(raw);
+    if (!all || typeof all !== "object") return {};
+    return all[merchantNameId] || {};
+  } catch {
+    return {};
+  }
+}
+
+// Persist issued coupon for this merchant+campaign in localStorage
+function saveIssuedCoupon(merchantNameId, campaignId, payload) {
+  try {
+    const raw = localStorage.getItem(ISSUED_COUPONS_STORAGE_KEY);
+    const all = raw ? JSON.parse(raw) : {};
+    const existing = all && typeof all === "object" ? all : {};
+
+    if (!existing[merchantNameId]) {
+      existing[merchantNameId] = {};
+    }
+
+    existing[merchantNameId][campaignId] = {
+      couponCode: payload.couponCode,
+      campaignTitle: payload.campaignTitle,
+      createdAt: new Date().toISOString(),
+    };
+
+    localStorage.setItem(
+      ISSUED_COUPONS_STORAGE_KEY,
+      JSON.stringify(existing)
+    );
+  } catch {
+    // ignore localStorage errors
+  }
+}
+
 export default function Merchant() {
   const { merchantNameId } = useParams();
 
@@ -28,11 +69,10 @@ export default function Merchant() {
 
         const cs = await campaignApi.listCampaignByMerchant(merchantNameId);
 
-        // Map backend fields into UI model
         const mapped = cs.map((c) => ({
           id: c.id,
           title: c.title,
-          campaignType: c.campaignType, // used to decide if coupon button shows
+          campaignType: c.campaignType,
           discountType: c.discount?.includes("%") ? "percentage" : "amount",
           discountValue: c.discount
             ? Number(c.discount.replace(/[^\d]/g, ""))
@@ -43,6 +83,25 @@ export default function Merchant() {
         }));
 
         setCampaigns(mapped);
+
+        // hydrate coupon state from localStorage for this merchant
+        const merchantKey =
+          m.merchantNameId || m.merchantId || merchantNameId;
+        const stored = loadIssuedCouponsForMerchant(merchantKey);
+
+        const initialCouponState = {};
+        mapped.forEach((c) => {
+          const storedEntry = stored[c.id];
+          if (storedEntry && storedEntry.couponCode) {
+            initialCouponState[c.id] = {
+              loading: false,
+              code: storedEntry.couponCode,
+              error: null,
+            };
+          }
+        });
+
+        setCampaignCouponState(initialCouponState);
       } catch (err) {
         console.error("Failed to load merchant or campaigns", err);
       } finally {
@@ -84,14 +143,25 @@ export default function Merchant() {
 
     try {
       const coupon = await campaignApi.issueCouponForCampaign(campaignId);
-      // Expecting backend to return something like { code: "XYZ123", ... }
-      
+      const couponCode = coupon.couponCode;
+
+      const merchantKey =
+        merchant.merchantNameId || merchant.merchantId || merchantNameId;
+      const campaign = campaigns.find((c) => c.id === campaignId);
+
+      // persist in localStorage
+      saveIssuedCoupon(merchantKey, campaignId, {
+        couponCode,
+        campaignTitle: campaign?.title || "",
+      });
+
+      // update UI state
       setCampaignCouponState((prev) => ({
         ...prev,
         [campaignId]: {
-          ...prev[campaignId],
+          ...(prev[campaignId] || {}),
           loading: false,
-          code: coupon.couponCode,
+          code: couponCode,
           error: null,
         },
       }));
@@ -99,7 +169,7 @@ export default function Merchant() {
       setCampaignCouponState((prev) => ({
         ...prev,
         [campaignId]: {
-          ...prev[campaignId],
+          ...(prev[campaignId] || {}),
           loading: false,
           code: null,
           error: err.message || "Failed to generate coupon",
@@ -217,7 +287,7 @@ export default function Merchant() {
                             <div className="mb-1 text-center text-sm font-medium text-green-700">
                               Coupon issued
                             </div>
-                          
+
                             <QRCodeCanvas
                               value={JSON.stringify({
                                 merchantNameId:
@@ -226,7 +296,7 @@ export default function Merchant() {
                                   merchant.id,
                                 campaignId: c.id,
                                 couponCode: state.code,
-                                campaignTitle: c.title
+                                campaignTitle: c.title,
                               })}
                               size={96}
                             />
