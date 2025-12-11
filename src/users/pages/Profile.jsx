@@ -12,7 +12,7 @@ const GENDER_OPTIONS = [
 export default function Profile() {
   const [customer, setCustomer] = useState(null);
   const [name, setName] = useState("");
-  const [gender, setGender] = useState("");
+  const [gender, setGender] = useState("NOT_SPECIFIED");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -120,7 +120,7 @@ export default function Profile() {
               <select
                 className="rounded border px-2 py-1 text-xs"
                 value={gender || ""}
-                onChange={(e) => setGender(e.target.value)}
+                onChange={(e) => {setGender(e.target.value)}}
               >
                 <option value="">Select gender</option>
                 {GENDER_OPTIONS.map((g) => (

@@ -1,7 +1,7 @@
 // src/services/api.js
 import { createClient } from "@supabase/supabase-js";
 import { CATEGORIES, MERCHANTS } from "../../data/sampleData.js";
-import { httpGet, httpPost } from "./httpClient.js";
+import { httpGet, httpPost, httpPut } from "./httpClient.js";
 
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
 const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
@@ -146,9 +146,9 @@ if (!merchantId) throw new Error("Merchant ID required");
 };
 
 export const feedApi = {
-  getFeed: async()=>
+  getFeed: async({page,size})=>
   {
-    return await httpGet(`/api/feed/updatedFeed`)
+    return await httpGet(`/api/feed/updatedFeed?page=${page}&&size=${size}`)
   }
 };
 
@@ -252,10 +252,7 @@ export const adminApi = {
 export const customerApi = {
   getMe: () => httpGet("/api/customer/me"),
   updateMe: (payload) =>
-    httpGet("/api/customer/me", {
-      method: "PUT",
-      body: payload,
-    }),
+    httpPut("/api/customer/updateMe", payload),
 };
 
 

@@ -48,3 +48,10 @@ export async function httpPost(path, payload) {
     body: payload != null ? JSON.stringify(payload) : undefined,
   });
 }
+
+export async function httpPut(path, payload) {
+  return request(path, {
+    method: "PUT",
+    body: payload != null ? JSON.stringify(payload) : undefined,
+  });
+}
