@@ -1,20 +1,20 @@
 // src/services/http.js
-// Minimal fetch wrappers: publicFetch (no auth) and merchantFetch (adds Authorization if present)
+// Minimal fetch wrappers: publicFetch (no auth) and adminFetch (adds Authorization if present)
 
-import { clearMerchantAuth } from "../auth/merchantAuth";
-import { redirectToMerchantLogin } from "./merchantProtectedApi.js";
-import { getOrCreateDeviceId } from "./merchantDevice";
+import { redirectToAdminLogin } from "./adminProtectedApi.js";
+import { getOrCreateDeviceId } from "./adminDevice.js";
 
 const API_BASE = "http://192.168.1.104:8080";
 
 
 
 async function handleResponse(res) {
+  console.log("handle res "+res)
   // 🔐 Handle auth failures globally
   if (res.status === 401 || res.status === 403) {
-    console.log("UnAuthorized")
-    redirectToMerchantLogin();
-    throw new Error("Unauthorized");
+    console.log(res)
+    redirectToAdminLogin();
+    throw new Error(res.message);
   }
 
   const contentType = res.headers.get("content-type") || "";
@@ -41,15 +41,14 @@ export async function httpPost(path, payload) {
   });
 }
 
-export async function merchantFetch(path, options = {}) {
+export async function adminFetch(path, options = {}) {
   const url = `${API_BASE}${path}`;
-  const merchantDeviceId = getOrCreateDeviceId();
-  const token = localStorage.getItem("accessToken");
-  console.log("Token from merchantFetch" + token)
-
+  const adminDeviceId = getOrCreateDeviceId();
+  const token = localStorage.getItem("adminAccessToken");
+  console.log("admin Token "+token)
   const headers = {
     "Content-Type": "application/json",
-    "X-Device-Id": merchantDeviceId,
+    "X-Device-Id": adminDeviceId,
     ...(options.headers || {}),
   };
 
@@ -66,6 +65,7 @@ export async function merchantFetch(path, options = {}) {
         ? JSON.stringify(options.body)
         : options.body,
   });
+  console.log("fetch respponse "+res)
 
   return handleResponse(res);
 }

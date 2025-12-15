@@ -16,7 +16,7 @@ export default function MerchantLogin() {
     setLoading(true);
     setError(null);
     try {
-      const tokenResponse = await merchantAuthApi.login({ merchantUserNameId, merchantUserPassword });
+      const tokenResponse = await merchantAuthApi.login({ usernameId: merchantUserNameId, password: merchantUserPassword });
       // tokenResponse expected: { accessToken, refreshToken, merchantUserIdPk }
       console.log(tokenResponse)
       saveMerchantAuth(tokenResponse);

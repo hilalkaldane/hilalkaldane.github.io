@@ -5,10 +5,10 @@ import { clearMerchantAuth } from "../auth/merchantAuth";
 import { merchantFetch } from "./merchantHttpClient";
 
 export const merchantAuthApi = {
-  login: async ({ merchantUserNameId, merchantUserPassword }) => {
+  login: async ({ usernameId, password }) => {
     return merchantFetch("/api/merchant-auth/login", {
       method: "POST",
-      body: { merchantUserNameId, merchantUserPassword },
+      body: { usernameId, password },
     });
   },
 };

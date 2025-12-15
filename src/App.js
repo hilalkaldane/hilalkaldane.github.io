@@ -12,12 +12,14 @@ import MobileHeader from "./users/components/MobileHeader";
 import MerchantBottomTabBar from "./merchant/components/MerchantBottomTabBar";
 
 // Admin pages
-import AdminDashboard from "./admin/pages/AdminDashboard";
 import AdminBottomTabBar from "./admin/components/AdminBottomTabBar";
 import Feed from "./users/pages/Feed";
 import MerchantApp from "./merchant/MerchantApp";
 import RequireMerchantAuth from "./merchant/auth/requireMerchantAuth";
 import MerchantLogin from "./merchant/pages/MerchantLogin";
+import AdminLogin from "./admin/components/AdminLogin";
+import RequireAdminAuth from "./admin/auth/requireAdminAuth";
+import AdminApp from "./admin/AdminApp";
 
 export default function App() {
   const loc = useLocation();
@@ -62,8 +64,11 @@ export default function App() {
         
         <Routes>
           <Route path="/merchant-login" element={<MerchantLogin/>}/>
+          <Route path="/admin-login" element={<AdminLogin/>}/>
+
           {/* Customer routes */}
           <Route path="/" element={<Feed />} />
+          <Route path="/feed" element={<Feed />} />
           <Route path="/discover/:category?" element={<Discover />} />
           <Route path="/merchant/:merchantNameId" element={<Merchant />} />
           <Route path="/profile" element={<Profile />} />
@@ -73,8 +78,9 @@ export default function App() {
           <Route path="/client/*" element={<MerchantApp />} />
         </Route>
           {/* Admin routes */}
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route element={<RequireAdminAuth />}>
+          <Route path="/admin/*" element={<AdminApp />} />
+        </Route>
         </Routes>
       </main>
 

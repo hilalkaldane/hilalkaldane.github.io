@@ -4,8 +4,8 @@ import { FiUserPlus, FiRefreshCcw } from "react-icons/fi";
 
 export default function AdminBottomTabBar() {
   const tabs = [
-    { to: "/admin/create-merchant", label: "Create", icon: <FiUserPlus /> },
-    { to: "/admin/reset", label: "Reset", icon: <FiRefreshCcw /> },
+    { to: "/admin/register-merchant", label: "Register Merchant", icon: <FiUserPlus /> },
+    { to: "/admin/categories", label: "Create Category", icon: <FiUserPlus /> },
   ];
 
   return (
