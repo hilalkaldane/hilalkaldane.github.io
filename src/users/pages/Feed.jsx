@@ -120,11 +120,10 @@ export default function Feed() {
     setCategoriesLoading(true);
     try {
       const res = await categoryApi.listCategories();
-      const data = Array.isArray(res) ? res : res?.data ?? [];
-      const cats = (Array.isArray(data) ? data : [])
-        .map((item) => item?.category)
+      const cats = res?.categoryList
         .filter(Boolean)
         .map((c) => ({ categoryCode: String(c.categoryCode).trim(), categoryName: c.categoryName, id: c.categoryCode }));
+        console.log(cats)
       // dedupe by categoryCode and sort
       const map = new Map();
       for (const c of cats) {

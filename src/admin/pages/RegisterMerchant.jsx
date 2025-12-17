@@ -3,9 +3,10 @@ import {
   adminProtectedApi,
   redirectToAdminLogin,
 } from "../services/adminProtectedApi";
+import { adminLocalStorage } from "../services/adminDevice";
 
 export default function RegisterMerchant() {
-  const adminToken = localStorage.getItem("adminAccessToken");
+    const adminToken = adminLocalStorage.getItem("adminAccessToken");
 
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);

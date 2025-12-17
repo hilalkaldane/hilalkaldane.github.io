@@ -3,7 +3,7 @@
 
 import { clearMerchantAuth } from "../auth/merchantAuth";
 import { redirectToMerchantLogin } from "./merchantProtectedApi.js";
-import { getOrCreateDeviceId } from "./merchantDevice";
+import { getOrCreateDeviceId, merchantLocalStorage } from "./merchantDevice";
 
 const API_BASE = "http://192.168.1.104:8080";
 
@@ -44,7 +44,7 @@ export async function httpPost(path, payload) {
 export async function merchantFetch(path, options = {}) {
   const url = `${API_BASE}${path}`;
   const merchantDeviceId = getOrCreateDeviceId();
-  const token = localStorage.getItem("accessToken");
+  const token = merchantLocalStorage.getItem("accessToken");
   console.log("Token from merchantFetch" + token)
 
   const headers = {

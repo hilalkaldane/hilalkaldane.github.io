@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import Chart from "react-apexcharts";
 import { merchantProtectedApi, redirectToMerchantLogin } from "../services/merchantProtectedApi";
+import { merchantLocalStorage } from "../services/merchantDevice";
 
 export default function Dashboard() {
-  const merchantId = localStorage.getItem("merchantIdPk");
+  const merchantId = merchantLocalStorage.getItem("merchantIdPk");
   const [chartData, setChartData] = useState(null);
   const [loading, setLoading] = useState(false);
 

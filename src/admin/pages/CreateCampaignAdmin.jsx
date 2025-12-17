@@ -1,26 +1,46 @@
 import React, { useState, useEffect } from "react";
-import { merchantProtectedApi } from "../services/merchantProtectedApi";
-import { merchantLocalStorage } from "../services/merchantDevice";
+import { useLocation, useNavigate } from "react-router-dom";
+import { adminProtectedApi } from "../services/adminProtectedApi";
+import { adminLocalStorage } from "../services/adminDevice";
+import { redirectToAdminLogin } from "../services/adminProtectedApi";
 
 const TERMS_REGEX = /^[a-zA-Z0-9\s\-,.\(\)]*$/;
 
-export default function CreateCampaign() {
+export default function CreateCampaignAdmin() {
+    const adminToken = adminLocalStorage.getItem("adminAccessToken");
+    if (!adminToken) redirectToAdminLogin();
+  /* ---------------- MERCHANT ---------------- */
+
+  const { state } = useLocation();
+  const navigate = useNavigate();
+
+  const merchantNameId = state?.merchantNameId;
+
+  /* ---------------- GUARD ---------------- */
+
+  useEffect(() => {
+    if (!merchantNameId) {
+      navigate("/admin/campaigns");
+    }
+  }, [merchantNameId, navigate]);
+
+  /* ---------------- FORM STATE ---------------- */
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 
-  // FLAT | PERCENTAGE | FIXED
   const [offerMode, setOfferMode] = useState("PERCENTAGE");
-
   const [discountValue, setDiscountValue] = useState(10);
   const [minimumOrderValue, setMinimumOrderValue] = useState(200);
 
-  // FIXED (menu price)
   const [originalPrice, setOriginalPrice] = useState("");
   const [offerPrice, setOfferPrice] = useState("");
 
   const [validUntilDate, setValidUntilDate] = useState("");
   const [terms, setTerms] = useState("");
   const [campaignType, setCampaignType] = useState("COUPON");
+
+  const [activeCampaigns, setActiveCampaigns] = useState([]);
 
   const [loading, setLoading] = useState(false);
   const [created, setCreated] = useState(null);
@@ -32,27 +52,24 @@ export default function CreateCampaign() {
   /* ---------------- DEFAULT DATE ---------------- */
 
   useEffect(() => {
-    const end = new Date(Date.now() + 7 * 86400000)
-      .toISOString()
-      .slice(0, 10);
+    const end = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
     setValidUntilDate(end);
   }, []);
 
-  /* ---------------- ACTIVE CAMPAIGNS ---------------- */
 
-  const invalidateActiveCampaignCache = () => {
-  merchantLocalStorage.removeItem("active_campaigns");
-};
+  /* ---------------- LOAD ACTIVE CAMPAIGNS ---------------- */
 
-
-  const activeCampaigns = (() => {
-    try {
-      const raw = merchantLocalStorage.getItem("active_campaigns");
-      return raw ? JSON.parse(raw).data || [] : [];
-    } catch {
-      return [];
+  useEffect(() => {
+    if (!merchantNameId) {
+      setActiveCampaigns([]);
+      return;
     }
-  })();
+
+    adminProtectedApi
+      .getActiveCampaignsForMerchant(merchantNameId)
+      .then((res) => setActiveCampaigns(res || []))
+      .catch(() => setActiveCampaigns([]));
+  }, [merchantNameId]);
 
   const activeListings = activeCampaigns.filter(
     (c) => c.campaignType === "LISTING"
@@ -92,6 +109,10 @@ export default function CreateCampaign() {
   /* ---------------- SUBMIT ---------------- */
 
   const submit = async () => {
+    if (!merchantNameId) {
+      return showError("Please select a merchant.");
+    }
+
     if (!title || title.trim().length < 5 || title.length > 40) {
       return showError("Title must be between 5 and 40 characters.");
     }
@@ -101,16 +122,12 @@ export default function CreateCampaign() {
     }
 
     if (campaignType === "COUPON" && activeCoupons.length >= 3) {
-      return showError(
-        "You already have 3 active coupon campaigns. Please make one inactive from Campaigns page."
-      );
+      return showError("Merchant already has 3 active coupon campaigns.");
     }
 
     for (const line of terms.split("\n")) {
       if (!TERMS_REGEX.test(line.trim())) {
-        return showError(
-          "Terms & Conditions contain unsupported characters."
-        );
+        return showError("Terms contain unsupported characters.");
       }
     }
 
@@ -143,7 +160,11 @@ export default function CreateCampaign() {
       if (o <= 0 || p <= 0 || p >= o)
         return showError("Offer price must be less than original price.");
       offerType = "FIXED";
-      parameters = { discount: o - p, originalPrice: o, offerPrice: p };
+      parameters = {
+        discount: o - p,
+        originalPrice: o,
+        offerPrice: p,
+      };
     }
 
     const payload = {
@@ -162,8 +183,10 @@ export default function CreateCampaign() {
 
     setLoading(true);
     try {
-      const res = await merchantProtectedApi.createCampaign(payload);
-      invalidateActiveCampaignCache();
+      const res = await adminProtectedApi.createCampaignForMerchant(
+        merchantNameId,
+        payload
+      );
       setCreated(res);
       showSuccess("Campaign created successfully.");
       resetForm();
@@ -178,17 +201,17 @@ export default function CreateCampaign() {
 
   const offerModeButtonClasses = (mode) =>
     [
-      "flex-1 flex items-center justify-center gap-1 rounded-full border px-3 py-2 text-xs font-medium transition",
+      "flex-1 rounded-full border px-3 py-2 text-xs font-medium",
       offerMode === mode
-        ? "bg-[#131118] text-white border-[#131118]"
+        ? "bg-black text-white border-black"
         : "bg-white text-gray-700 border-gray-200",
     ].join(" ");
 
   const campaignTypeButtonClasses = (type) =>
     [
-      "flex-1 rounded-full px-3 py-1 text-xs font-medium border transition",
+      "flex-1 rounded-full px-3 py-1 text-xs font-medium border",
       campaignType === type
-        ? "bg-slate-900 text-white border-slate-900"
+        ? "bg-black text-white border-black"
         : "bg-white text-gray-700 border-gray-200",
     ].join(" ");
 
@@ -199,52 +222,35 @@ export default function CreateCampaign() {
           <label className="text-sm font-medium">Discount value</label>
           <input
             type="number"
-            placeholder={
-              offerMode === "FLAT"
-                ? "e.g. 100 (₹ off)"
-                : "e.g. 20 (%)"
-            }
             className="mb-2 w-full rounded border p-2"
             value={discountValue}
             onChange={(e) => setDiscountValue(e.target.value)}
           />
 
-          <label className="text-sm font-medium">
-            Minimum order value
-          </label>
+          <label className="text-sm font-medium">Minimum order value</label>
           <input
             type="number"
-            placeholder="e.g. 500 (enter 0 for no minimum)"
-            className="mb-1 w-full rounded border p-2"
+            className="mb-3 w-full rounded border p-2"
             value={minimumOrderValue}
             onChange={(e) => setMinimumOrderValue(e.target.value)}
           />
-          <div className="mb-3 text-xs text-gray-500">
-            Customers must spend at least this amount to use the offer.
-          </div>
         </>
       );
     }
 
     return (
       <>
-        <label className="text-sm font-medium">
-          Original price (without offer)
-        </label>
+        <label className="text-sm font-medium">Original price</label>
         <input
           type="number"
-          placeholder="e.g. 300"
           className="mb-2 w-full rounded border p-2"
           value={originalPrice}
           onChange={(e) => setOriginalPrice(e.target.value)}
         />
 
-        <label className="text-sm font-medium">
-          Offer price (customer pays)
-        </label>
+        <label className="text-sm font-medium">Offer price</label>
         <input
           type="number"
-          placeholder="e.g. 249"
           className="mb-3 w-full rounded border p-2"
           value={offerPrice}
           onChange={(e) => setOfferPrice(e.target.value)}
@@ -257,170 +263,120 @@ export default function CreateCampaign() {
 
   return (
     <div className="flex justify-center p-4">
-      <div className="w-full max-w-md rounded-2xl border bg-white p-4 shadow-sm">
-        <h2 className="mb-3 text-lg font-semibold text-gray-900">
-          Create Campaign
-        </h2>
+      <div className="w-full max-w-md rounded-2xl border bg-white p-4">
+        <h2 className="mb-3 text-lg font-semibold">Create Campaign (Admin) for Merchant </h2><span className="text-blue-700 center">{merchantNameId}</span>
 
-        {/* Coupon limit warning */}
+        {/* WARNINGS */}
         {campaignType === "COUPON" && activeCoupons.length >= 3 && (
-          <div className="mb-3 rounded-lg border border-red-200 bg-red-50 p-2 text-xs text-red-700">
-            You already have 3 active coupon campaigns. Please make one inactive
-            from the Campaigns page.
+          <div className="mb-3 rounded bg-red-50 p-2 text-xs text-red-700">
+            Merchant already has 3 active coupon campaigns.
           </div>
         )}
 
-        {/* Campaign type */}
-        <div className="mb-4">
-          <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
-            Campaign type
+        {campaignType === "LISTING" && activeListings.length >= 1 && (
+          <div className="mb-3 rounded bg-amber-50 p-2 text-xs text-amber-800">
+            Creating a new listing will deactivate:
+            <ul className="list-disc pl-4">
+              {activeListings.map((c) => (
+                <li key={c.id}>{c.title}</li>
+              ))}
+            </ul>
           </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              className={campaignTypeButtonClasses("COUPON")}
-              onClick={() => setCampaignType("COUPON")}
-            >
-              🎟 Coupon
-            </button>
-            <button
-              type="button"
-              className={campaignTypeButtonClasses("LISTING")}
-              onClick={() => setCampaignType("LISTING")}
-            >
-              📌 Listing only
-            </button>
-          </div>
+        )}
 
-          {campaignType === "LISTING" && activeListings.length >= 1 && (
-            <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
-              <div className="font-semibold">
-                You already have an active listing.
-              </div>
-              <div className="mt-1">
-                Creating a new listing will mark the following listing(s) as
-                inactive:
-              </div>
-              <ul className="mt-1 list-disc pl-4">
-                {activeListings.map((c) => (
-                  <li key={c.id}>{c.title}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+        {/* CAMPAIGN TYPE */}
+        <div className="mb-3 flex gap-2">
+          <button
+            className={campaignTypeButtonClasses("COUPON")}
+            onClick={() => setCampaignType("COUPON")}
+          >
+            Coupon
+          </button>
+          <button
+            className={campaignTypeButtonClasses("LISTING")}
+            onClick={() => setCampaignType("LISTING")}
+          >
+            Listing
+          </button>
         </div>
 
-        {/* Title */}
+        {/* TITLE */}
         <label className="text-sm font-medium">Campaign title</label>
         <input
-          maxLength={40}
-          placeholder="e.g. Flat ₹100 off on orders above ₹500"
-          className="mb-1 w-full rounded-lg border border-gray-200 p-2 text-sm"
+          className="mb-3 w-full rounded border p-2"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
-        <div className="mb-3 text-xs text-gray-500">
-          Short, clear title shown to customers (5–40 characters).
-        </div>
 
-        {/* Description */}
-        <label className="text-sm font-medium">
-          Description (optional)
-        </label>
+        {/* DESCRIPTION */}
+        <label className="text-sm font-medium">Description</label>
         <textarea
-          maxLength={200}
-          placeholder="Explain what the customer gets or any conditions."
-          className="mb-3 w-full rounded-lg border border-gray-200 p-2 text-sm"
+          className="mb-3 w-full rounded border p-2"
           rows={3}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
 
-        {/* Offer mode */}
-        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-          Offer type
-        </div>
-        <div className="mb-3 flex gap-2 text-xs">
+        {/* OFFER MODE */}
+        <div className="mb-3 flex gap-2">
           <button
-            type="button"
             className={offerModeButtonClasses("FLAT")}
             onClick={() => setOfferMode("FLAT")}
           >
-            ₹ Flat amount
+            Flat
           </button>
           <button
-            type="button"
             className={offerModeButtonClasses("PERCENTAGE")}
             onClick={() => setOfferMode("PERCENTAGE")}
           >
-            % Percentage
+            %
           </button>
           <button
-            type="button"
             className={offerModeButtonClasses("FIXED")}
             onClick={() => setOfferMode("FIXED")}
           >
-            🍽 Menu price
+            Fixed
           </button>
         </div>
 
         {renderOfferFields()}
 
-        {/* Valid until */}
+        {/* VALID UNTIL */}
         <label className="text-sm font-medium">Valid until</label>
         <input
           type="date"
+          className="mb-3 w-full rounded border p-2"
           value={validUntilDate}
           onChange={(e) => setValidUntilDate(e.target.value)}
-          className="mb-3 w-full rounded-lg border border-gray-200 p-2 text-sm"
         />
-        <div className="mb-3 text-xs text-gray-500">
-          Campaign will expire at the end of this day.
-        </div>
 
-        {/* Terms */}
-        <label className="text-sm font-medium">
-          Terms & Conditions (optional)
-        </label>
+        {/* TERMS */}
+        <label className="text-sm font-medium">Terms</label>
         <textarea
-          className="mb-4 w-full rounded-lg border border-gray-200 p-2 text-sm"
+          className="mb-4 w-full rounded border p-2"
           rows={3}
           value={terms}
           onChange={(e) => setTerms(e.target.value)}
-          placeholder={`One condition per line\nExample:\nValid once per customer\nShow offer before billing`}
         />
-        <div className="mb-4 text-xs text-gray-500">
-          Allowed characters: letters, numbers, space, - , . ( )
-        </div>
 
         <button
           onClick={submit}
-          disabled={
-            loading ||
-            (campaignType === "COUPON" && activeCoupons.length >= 3)
-          }
-          className="w-full rounded-full bg-black py-2 text-sm font-semibold text-white disabled:opacity-60"
+          disabled={loading}
+          className="w-full rounded bg-black py-2 text-white"
         >
           {loading ? "Creating…" : "Create Campaign"}
         </button>
-
-        {created && (
-          <div className="mt-3 text-xs text-green-700">
-            Campaign created successfully
-          </div>
-        )}
       </div>
 
-      {/* Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-4 shadow-lg">
-            <div className="mb-2 text-sm font-semibold">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
+          <div className="bg-white p-4 rounded w-80">
+            <div className="font-semibold mb-2">
               {modalSuccess ? "Success" : "Error"}
             </div>
-            <div className="mb-4 text-sm">{modalMessage}</div>
+            <div className="mb-3 text-sm">{modalMessage}</div>
             <button
-              className="rounded border px-4 py-1 text-xs"
+              className="border px-3 py-1 text-xs"
               onClick={() => setModalOpen(false)}
             >
               Close

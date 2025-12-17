@@ -58,8 +58,7 @@ export default function App() {
       {!isMerchantRoute && !isAdminRoute && <MobileHeader />}
 
       <main
-        className={`${!isMerchantRoute && !isAdminRoute ? "" : ""
-          } overflow-auto`}
+        className="flex-1 overflow-auto pb-16 overflow-auto"
       >
         
         <Routes>

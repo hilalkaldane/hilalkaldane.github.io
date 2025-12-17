@@ -3,9 +3,10 @@
 import React, { useState } from "react";
 import QrScanner from "react-qr-scanner";
 import { merchantProtectedApi } from "../services/merchantProtectedApi";
+import { merchantLocalStorage } from "../services/merchantDevice";
 
 export default function RedeemCoupon() {
-  const merchantNameId = localStorage.getItem("merchantNameId");
+  const merchantNameId = merchantLocalStorage.getItem("merchantNameId");
 
   const [result, setResult] = useState(null);
   const [scanning, setScanning] = useState(false);

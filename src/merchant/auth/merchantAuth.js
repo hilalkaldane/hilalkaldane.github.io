@@ -1,23 +1,25 @@
 // src/auth/merchantAuth.js
-// Persist tokens only for merchant-side. LocalStorage keys must match backend contract.
+// Persist tokens only for merchant-side. merchantLocalStorage keys must match backend contract.
+
+import { merchantLocalStorage } from "../services/merchantDevice";
 
 export function saveMerchantAuth({ accessToken, refreshToken, merchantUserIdPk, merchantIdPk, merchantNameId }) {
-  if (accessToken) localStorage.setItem("accessToken", accessToken);
-  if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
-  if (merchantUserIdPk != null) localStorage.setItem("merchantUserIdPk", String(merchantUserIdPk));
-  if (merchantIdPk != null) localStorage.setItem("merchantIdPk", String(merchantIdPk));
-  if (merchantNameId != null) localStorage.setItem("merchantNameId", String(merchantNameId));
+  if (accessToken) merchantLocalStorage.setItem("accessToken", accessToken);
+  if (refreshToken) merchantLocalStorage.setItem("refreshToken", refreshToken);
+  if (merchantUserIdPk != null) merchantLocalStorage.setItem("merchantUserIdPk", String(merchantUserIdPk));
+  if (merchantIdPk != null) merchantLocalStorage.setItem("merchantIdPk", String(merchantIdPk));
+  if (merchantNameId != null) merchantLocalStorage.setItem("merchantNameId", String(merchantNameId));
 
 }
 
 export function clearMerchantAuth() {
-  localStorage.removeItem("accessToken");
-  localStorage.removeItem("refreshToken");
-  localStorage.removeItem("merchantUserIdPk");
-  localStorage.removeItem("merchantIdPk");
-  localStorage.removeItem("merchantNameId");
+  merchantLocalStorage.removeItem("accessToken");
+  merchantLocalStorage.removeItem("refreshToken");
+  merchantLocalStorage.removeItem("merchantUserIdPk");
+  merchantLocalStorage.removeItem("merchantIdPk");
+  merchantLocalStorage.removeItem("merchantNameId");
 }
 
 export function isMerchantLoggedIn() {
-  return !!localStorage.getItem("accessToken");
+  return !!merchantLocalStorage.getItem("accessToken");
 }

@@ -16,6 +16,7 @@ export const adminAuthApi = {
 
 export const adminProtectedApi = {
   getCategoriesAndSubcategories: async() => adminFetch("/api/metadata/listCategoriesAndSubcategories"),
+  listMerchants: async() => adminFetch("/api/admin/merchants"),
   createMerchant: async (payload) =>
     adminFetch(`/api/admin/create-merchant`, {
       method: "POST",
@@ -33,6 +34,8 @@ export const adminProtectedApi = {
       method: "POST",
       body: payload,
     }),
+    getActiveCampaignsForMerchant: async (merchantNameId)=> 
+      adminFetch(`/api/campaigns/merchant/${merchantNameId}`),
     
   getDashboard: async () => adminFetch("/api/admin/dashboard"),
   getCampaigns: async () => adminFetch("/api/admin/campaigns"),
@@ -52,11 +55,16 @@ export const adminProtectedApi = {
   // UPDATED: send RedemptionRequest payload
   // RedemptionRequest(UUID campaignId, String couponCode, Map<String, Object> extras, double billAmount)
 
-  createCampaign: async( payload )=>
-    adminFetch(`/api/campaigns/logged-in-admin/create`, {
+  createCampaignForMerchant: async( merchantNameId, payload )=>
+    adminFetch(`/api/admin/merchants/${merchantNameId}/campaigns`, {
       method: "POST",
       body: payload,
     }),
+
+  deactivateCampaign: async(campaignId, merchantNameId) =>
+    adminFetch(`/api/admin/merchants/${merchantNameId}/campaigns/${campaignId}/deactivate`, {
+      method: "PATCH"
+    })
 };
 
 export function redirectToAdminLogin() {

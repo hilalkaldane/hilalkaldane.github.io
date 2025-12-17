@@ -1,8 +1,8 @@
 // src/services/http.js
 // Minimal fetch wrappers: publicFetch (no auth) and adminFetch (adds Authorization if present)
 
+import { adminLocalStorage, getOrCreateDeviceId } from "./adminDevice.js";
 import { redirectToAdminLogin } from "./adminProtectedApi.js";
-import { getOrCreateDeviceId } from "./adminDevice.js";
 
 const API_BASE = "http://192.168.1.104:8080";
 
@@ -44,7 +44,7 @@ export async function httpPost(path, payload) {
 export async function adminFetch(path, options = {}) {
   const url = `${API_BASE}${path}`;
   const adminDeviceId = getOrCreateDeviceId();
-  const token = localStorage.getItem("adminAccessToken");
+  const token = adminLocalStorage.getItem("adminAccessToken");
   console.log("admin Token "+token)
   const headers = {
     "Content-Type": "application/json",

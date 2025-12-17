@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { adminProtectedApi, redirectToAdminLogin } from "../services/adminProtectedApi";
+import { adminLocalStorage } from "../services/adminDevice";
 
 export default function AdminCategories() {
-  const adminToken = localStorage.getItem("adminAccessToken");
+  const adminToken = adminLocalStorage.getItem("adminAccessToken");
   if (!adminToken) redirectToAdminLogin();
 
   /* ---------------- CATEGORY STATE ---------------- */
@@ -32,6 +33,7 @@ export default function AdminCategories() {
         categoryName: categoryName.trim(),
       });
       setSuccess("Category created successfully");
+      adminLocalStorage.removeItem()
       setCategoryCode("");
       setCategoryName("");
     } catch (err) {
@@ -52,6 +54,7 @@ export default function AdminCategories() {
         subcategoryCode: subcategoryCode.trim(),
         subcategoryName: subcategoryName.trim(),
       });
+      adminLocalStorage.removeItem()
       setSuccess("Subcategory created successfully");
       setSubcategoryCode("");
       setSubcategoryName("");

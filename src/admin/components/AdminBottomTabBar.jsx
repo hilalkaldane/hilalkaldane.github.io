@@ -1,11 +1,12 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { FiUserPlus, FiRefreshCcw } from "react-icons/fi";
+import { FiUserPlus, FiRefreshCcw, FiEdit, FiList } from "react-icons/fi";
 
 export default function AdminBottomTabBar() {
   const tabs = [
     { to: "/admin/register-merchant", label: "Register Merchant", icon: <FiUserPlus /> },
     { to: "/admin/categories", label: "Create Category", icon: <FiUserPlus /> },
+    { to: "/admin/campaigns", label: "Campaigns", icon: <FiList /> },
   ];
 
   return (

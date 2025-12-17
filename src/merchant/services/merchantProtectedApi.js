@@ -41,6 +41,10 @@ export const merchantProtectedApi = {
       method: "POST",
       body: payload,
     }),
+  deactivateCampaign: async( campaignId )=>
+    merchantFetch(`/api/campaigns/deactivate/${campaignId}`, {
+      method: "PATCH"
+    }),
 };
 
 export function redirectToMerchantLogin() {

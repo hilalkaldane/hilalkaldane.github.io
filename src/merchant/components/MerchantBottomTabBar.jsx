@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink, useParams } from "react-router-dom";
-import { FiBarChart2, FiPlusSquare, FiCheckSquare } from "react-icons/fi";
+import { FiBarChart2, FiPlusSquare, FiCheckSquare, FiList } from "react-icons/fi";
 import { useLocation } from 'react-router-dom';
 
 function useQuery() {
@@ -13,13 +13,13 @@ export default function MerchantBottomTabBar() {
   const merchantId = query.get('merchantId');
   const tabs = [
     { to: `/client/dashboard`, label: "Dashboard", icon: <FiBarChart2 /> },
-    { to: `/client/create-campaign`, label: "Create", icon: <FiPlusSquare /> },
     { to: `/client/redeem-coupon`, label: "Validate", icon: <FiCheckSquare /> },
+    { to: `/client/campaigns`, label: "Campaigns", icon: <FiList /> },
   ];
 
   return (
-<nav className="fixed bottom-0 h-14 border-t border-gray-200 z-40 max-w-md w-full mx-auto border px-12 bg-[#f2f0f4] drop-shadow-md">
-  <div className="max-w-sm mx-auto flex items-center justify-between h-full w-full px-6">
+<nav className="fixed bottom-0 z-40 h-16 w-full max-w-md mx-auto border-t border-gray-200 bg-[#f2f0f4] drop-shadow-md">
+  <div className="flex h-full items-center justify-between px-12">
     {tabs.map((t) => (
       <NavLink
         key={t.label}
