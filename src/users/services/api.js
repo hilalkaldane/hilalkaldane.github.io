@@ -6,7 +6,7 @@ import { httpGet, httpPost, httpPut } from "./httpClient.js";
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
 const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
 export const supabase = createClient(supabaseUrl, supabaseKey);
-const API_BASE_URL = "http://192.168.1.104:8080"
+const API_BASE_URL = "http://10.27.144.117:8080"
 
 // --- INIT DATA ---
 export async function initData() {

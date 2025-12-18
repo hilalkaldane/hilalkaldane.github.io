@@ -16,18 +16,21 @@ export const merchantAuthApi = {
 export const merchantProtectedApi = {
   getDashboard: async () => merchantFetch("/api/merchant/dashboard"),
   getCampaigns: async () => merchantFetch("/api/merchant/campaigns"),
-  getMonthlyDashboardByDay: async (days) =>
+  getMerchantConsolidatedStats: async (days) =>
     merchantFetch(`/api/campaign-stats/consolidated/daily/${days}`),
   issueCouponForCampaign: async (campaignId) =>
     merchantFetch(`/api/campaigns/${encodeURIComponent(campaignId)}/issue`, {
       method: "POST",
     }),
+    getCampaignStats: async (campaignId, days)=>
+      merchantFetch(`/api/campaign-stats/individual/campaign/${campaignId}/daily/${days}`),
   listCampaigns: async () =>
     merchantFetch("/api/campaigns/logged-in-merchant/campaigns"),
   getValidatedCoupons: async () =>
     merchantFetch("/api/redemption/logged-in-merchant/validated"),
   getMerchantNameId: async (merchantIdPk) =>
     merchantFetch(`/api/merchant/getMerchantNameId?merchantIdPk=${merchantIdPk}`),
+  getProfile: async() =>merchantFetch("/api/merchant-profile/me"),
 
   // UPDATED: send RedemptionRequest payload
   // RedemptionRequest(UUID campaignId, String couponCode, Map<String, Object> extras, double billAmount)
@@ -44,6 +47,11 @@ export const merchantProtectedApi = {
   deactivateCampaign: async( campaignId )=>
     merchantFetch(`/api/campaigns/deactivate/${campaignId}`, {
       method: "PATCH"
+    }),
+  createEmployee: async(payload) =>
+    merchantFetch(`/api/merchant/create-employee`, {
+      method: "POST",
+      body: payload,
     }),
 };
 

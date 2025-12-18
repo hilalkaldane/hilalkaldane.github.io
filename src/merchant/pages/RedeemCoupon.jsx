@@ -1,5 +1,3 @@
-// src/pages/RedeemCoupon.jsx (or similar)
-
 import React, { useState } from "react";
 import QrScanner from "react-qr-scanner";
 import { merchantProtectedApi } from "../services/merchantProtectedApi";
@@ -12,26 +10,24 @@ export default function RedeemCoupon() {
   const [scanning, setScanning] = useState(false);
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [scannedData, setScannedData] = useState(null); // { couponCode, campaignId, campaignTitle }
+  const [scannedData, setScannedData] = useState(null);
   const [billAmount, setBillAmount] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const handleScan = async (scanResult) => {
-    if (!scanResult || !scanResult.text) return;
+    if (!scanResult?.text) return;
 
     try {
       const parsed = JSON.parse(scanResult.text);
-      console.log(parsed);
 
       if (String(parsed.merchantNameId) !== String(merchantNameId)) {
         setResult({
           success: false,
-          message: "Merchant mismatch – invalid QR code",
+          message: "This QR does not belong to your store",
         });
         return;
       }
 
-      // Stop scanner while confirming
       setScanning(false);
 
       setScannedData({
@@ -39,44 +35,35 @@ export default function RedeemCoupon() {
         campaignId: parsed.campaignId,
         campaignTitle: parsed.campaignTitle || "Campaign",
       });
+
       setBillAmount("");
       setModalOpen(true);
-    } catch (err) {
-      console.error("QR parse error:", err);
-      setResult({ success: false, message: "Invalid QR format" });
+    } catch {
+      setResult({ success: false, message: "Invalid QR code" });
     }
-  };
-
-  const handleError = (err) => {
-    console.error("QR Scan error:", err);
   };
 
   const handleRedeemConfirm = async () => {
     if (!scannedData) return;
 
-    const parsedBill = parseFloat(billAmount);
-    const bill = Number.isFinite(parsedBill) ? parsedBill : 0;
-
-    const payload = {
-      campaignId: scannedData.campaignId,          // UUID string from QR
-      couponCode: scannedData.couponCode,
-      billAmount: bill,
-      extras: {
-        source: "qr",
-        merchantNameId,
-      },
-    };
+    const bill = Number.parseFloat(billAmount) || 0;
 
     setSubmitting(true);
     setResult(null);
 
     try {
-      const res = await merchantProtectedApi.redeemCoupon(payload);
-      // res is RedemptionSuccessfulResponse from backend (via ApiResponse.data)
+      const res = await merchantProtectedApi.redeemCoupon({
+        campaignId: scannedData.campaignId,
+        couponCode: scannedData.couponCode,
+        billAmount: bill,
+        extras: { source: "qr", merchantNameId },
+      });
+
       setResult({
         success: true,
         message: res?.message || "Coupon redeemed successfully",
       });
+
       setModalOpen(false);
       setScannedData(null);
       setBillAmount("");
@@ -88,94 +75,120 @@ export default function RedeemCoupon() {
   };
 
   return (
-    <div className="p-4">
-      <h2 className="mb-3 text-xl font-semibold">Redeem via QR</h2>
+    <div className="mx-auto max-w-md space-y-4 p-4">
 
-      {/* QR Scanner Toggle */}
-      <button
-        onClick={() => setScanning((s) => !s)}
-        className="mb-3 w-full rounded bg-blue-600 py-2 text-white"
-      >
-        {scanning ? "Stop Scanner" : "Scan QR Code"}
-      </button>
+      {/* Header */}
+      <div className="rounded-lg border bg-white p-4">
+        <h2 className="text-lg font-semibold">Redeem Coupon</h2>
+        <p className="mt-1 text-sm text-gray-600">
+          Scan customer QR to verify and redeem
+        </p>
+      </div>
 
-      {scanning && (
-        <div className="mb-3">
-          <QrScanner
-            delay={300}
-            style={{ width: "100%", height: "50vh" }}
-            onError={handleError}
-            onScan={handleScan}
-            constraints={{ video: { facingMode: "environment" } }}
-          />
-        </div>
-      )}
-
-      {result && (
-        <div
-          className={`rounded border p-3 ${
-            result.success
-              ? "border-green-200 bg-green-50"
-              : "border-red-200 bg-red-50"
+      {/* Scanner Card */}
+      <div className="rounded-lg border bg-white p-4 space-y-3">
+        <button
+          onClick={() => {
+            setResult(null);
+            setScanning(s => !s);
+          }}
+          className={`w-full rounded py-2 text-sm font-medium ${
+            scanning
+              ? "bg-gray-200 text-gray-800"
+              : "bg-black text-white"
           }`}
         >
-          <div className="font-semibold">
-            {result.success ? "Redeemed" : "Error"}
+          {scanning ? "Stop Scanner" : "Start QR Scan"}
+        </button>
+
+        {scanning && (
+          <div className="overflow-hidden rounded border">
+            <QrScanner
+              delay={300}
+              style={{ width: "100%", height: "45vh" }}
+              onError={console.error}
+              onScan={handleScan}
+              constraints={{ video: { facingMode: "environment" } }}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Result */}
+      {result && (
+        <div
+          className={`rounded-lg border p-3 ${
+            result.success
+              ? "border-green-300 bg-green-50"
+              : "border-red-300 bg-red-50"
+          }`}
+        >
+          <div className="font-medium">
+            {result.success ? "Success" : "Error"}
           </div>
           <div className="text-sm">{result.message}</div>
         </div>
       )}
 
-      {/* Modal: confirm redemption */}
+      {/* Redeem Modal */}
       {modalOpen && scannedData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-full max-w-sm rounded-lg bg-white p-4 shadow-lg">
-            <h3 className="mb-2 text-lg font-semibold">
-              Redeem {scannedData.campaignTitle}
-            </h3>
-            <div className="mb-1 text-xs text-gray-600">
-              Coupon code: <span className="font-mono">{scannedData.couponCode}</span>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-sm rounded-xl bg-white p-5 shadow-xl space-y-4">
+
+            <div>
+              <h3 className="text-lg font-semibold">
+                Redeem Coupon
+              </h3>
+              <p className="text-sm text-gray-600">
+                {scannedData.campaignTitle}
+              </p>
             </div>
 
-            <div className="mt-3 mb-3">
-              <label className="mb-1 block text-sm">Bill amount</label>
+            <div className="rounded bg-gray-50 p-2 text-xs">
+              Code:
+              <span className="ml-1 font-mono">
+                {scannedData.couponCode}
+              </span>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium">
+                Bill Amount (optional)
+              </label>
               <input
                 type="number"
-                className="w-full rounded border p-2 text-sm"
-                value={billAmount}
-                onChange={(e) => setBillAmount(e.target.value)}
                 min="0"
                 step="0.01"
+                className="w-full rounded border p-2 text-sm focus:outline-none focus:ring"
+                placeholder="e.g. 450"
+                value={billAmount}
+                onChange={(e) => setBillAmount(e.target.value)}
               />
             </div>
 
-            <div className="mt-4 flex justify-end gap-2">
+            <div className="flex justify-end gap-2 pt-2">
               <button
-                type="button"
-                className="rounded border px-3 py-1 text-sm"
                 onClick={() => {
                   setModalOpen(false);
                   setScannedData(null);
                   setBillAmount("");
                 }}
                 disabled={submitting}
+                className="rounded border px-3 py-1 text-sm"
               >
                 Cancel
               </button>
               <button
-                type="button"
-                className="rounded bg-black px-3 py-1 text-sm text-white disabled:opacity-60"
                 onClick={handleRedeemConfirm}
                 disabled={submitting}
+                className="rounded bg-black px-4 py-1 text-sm text-white disabled:opacity-60"
               >
-                {submitting ? "Redeeming…" : "Redeem"}
+                {submitting ? "Redeeming…" : "Confirm"}
               </button>
             </div>
           </div>
         </div>
       )}
-
-      <hr className="my-4" />
     </div>
   );
 }

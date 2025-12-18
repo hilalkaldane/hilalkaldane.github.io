@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { categoryApi, feedApi } from "../services/api";
 import { useNavigate } from "react-router-dom";
+import ReactGA from "react-ga4";
+import { getOrCreateDeviceId } from "../services/device";
 
 /* Constants */
 const STORAGE_KEY = "feedCache_v1";
@@ -21,10 +23,17 @@ function SkeletonCard() {
 /* Helpers to normalize category from different possible shapes */
 const getCampaignCategoryCode = (campaign) => {
   if (!campaign) return null;
-  if (typeof campaign.category === "string" && campaign.category.trim() !== "") {
+  if (
+    typeof campaign.category === "string" &&
+    campaign.category.trim() !== ""
+  ) {
     return campaign.category.trim();
   }
-  if (campaign.category && typeof campaign.category === "object" && campaign.category.categoryCode) {
+  if (
+    campaign.category &&
+    typeof campaign.category === "object" &&
+    campaign.category.categoryCode
+  ) {
     return String(campaign.category.categoryCode).trim();
   }
   if (campaign.categoryCode && typeof campaign.categoryCode === "string") {
@@ -77,24 +86,40 @@ export default function Feed() {
     if (!Array.isArray(items) || items.length === 0) return;
     setFeedCampaigns((prev) => {
       const existing = new Set(prev.map((p) => String(p.campaignId)));
-      const fresh = items.filter((x) => x && x.campaignId && !existing.has(String(x.campaignId)));
+      const fresh = items.filter(
+        (x) => x && x.campaignId && !existing.has(String(x.campaignId))
+      );
       return fresh.length ? [...prev, ...fresh] : prev;
     });
   };
 
   const persistPageToCache = (pageNumber, items) => {
     if (!Array.isArray(items)) return;
-    const cache = readCache() || { version: null, nextWindow: null, storedAt: null, pages: {} };
-    const existingPage = Array.isArray(cache.pages?.[pageNumber]) ? cache.pages[pageNumber] : [];
+    const cache = readCache() || {
+      version: null,
+      nextWindow: null,
+      storedAt: null,
+      pages: {},
+    };
+    const existingPage = Array.isArray(cache.pages?.[pageNumber])
+      ? cache.pages[pageNumber]
+      : [];
     const existingIds = new Set(existingPage.map((p) => String(p.campaignId)));
-    const merged = [...existingPage, ...items.filter((i) => !existingIds.has(String(i.campaignId)))];
+    const merged = [
+      ...existingPage,
+      ...items.filter((i) => !existingIds.has(String(i.campaignId))),
+    ];
     cache.pages = { ...(cache.pages || {}), [pageNumber]: merged };
     // per spec: do not update storedAt/version here
     writeCache(cache);
   };
 
   const setCacheAsInitial = (paged) => {
-    const items = Array.isArray(paged?.items) ? paged.items : Array.isArray(paged) ? paged : [];
+    const items = Array.isArray(paged?.items)
+      ? paged.items
+      : Array.isArray(paged)
+      ? paged
+      : [];
     const version = paged?.version ?? null;
     const nextWindow = paged?.nextWindow ?? null;
     const now = Date.now();
@@ -109,7 +134,11 @@ export default function Feed() {
 
   const fetchPageFromServer = async (pageNum) => {
     const resp = await feedApi.getFeed({ page: pageNum, size: PAGE_SIZE });
-    const items = Array.isArray(resp?.items) ? resp.items : Array.isArray(resp) ? resp : [];
+    const items = Array.isArray(resp?.items)
+      ? resp.items
+      : Array.isArray(resp)
+      ? resp
+      : [];
     const version = resp?.version ?? null;
     const nextWindow = resp?.nextWindow ?? null;
     return { items, version, nextWindow, raw: resp };
@@ -122,14 +151,20 @@ export default function Feed() {
       const res = await categoryApi.listCategories();
       const cats = res?.categoryList
         .filter(Boolean)
-        .map((c) => ({ categoryCode: String(c.categoryCode).trim(), categoryName: c.categoryName, id: c.categoryCode }));
-        console.log(cats)
+        .map((c) => ({
+          categoryCode: String(c.categoryCode).trim(),
+          categoryName: c.categoryName,
+          id: c.categoryCode,
+        }));
+      console.log(cats);
       // dedupe by categoryCode and sort
       const map = new Map();
       for (const c of cats) {
         if (!map.has(c.categoryCode)) map.set(c.categoryCode, c);
       }
-      const uniq = Array.from(map.values()).sort((a, b) => (a.categoryName || "").localeCompare(b.categoryName || ""));
+      const uniq = Array.from(map.values()).sort((a, b) =>
+        (a.categoryName || "").localeCompare(b.categoryName || "")
+      );
       setCategoryList(uniq);
     } catch (err) {
       console.error("Failed to load categories", err);
@@ -164,12 +199,21 @@ export default function Feed() {
         const expired = isCacheExpired(cache);
         if (!expired) {
           const pages = cache.pages || {};
-          const pageNums = Object.keys(pages).map(Number).filter(Number.isFinite).sort((a, b) => a - b);
-          const concat = pageNums.reduce((acc, pn) => [...acc, ...(Array.isArray(pages[pn]) ? pages[pn] : [])], []);
+          const pageNums = Object.keys(pages)
+            .map(Number)
+            .filter(Number.isFinite)
+            .sort((a, b) => a - b);
+          const concat = pageNums.reduce(
+            (acc, pn) => [
+              ...acc,
+              ...(Array.isArray(pages[pn]) ? pages[pn] : []),
+            ],
+            []
+          );
           setFeedCampaigns(concat);
           const highest = pageNums.length ? pageNums[pageNums.length - 1] : 0;
           setCurrentPage(highest);
-          setHasMore(((cache.pages?.[highest]?.length ?? 0) === PAGE_SIZE));
+          setHasMore((cache.pages?.[highest]?.length ?? 0) === PAGE_SIZE);
         } else {
           const p0 = await fetchPageFromServer(0);
           setCacheAsInitial(p0.raw);
@@ -214,13 +258,18 @@ export default function Feed() {
   };
 
   useEffect(() => {
+    ReactGA.set({
+      device_id: getOrCreateDeviceId(),
+    });
     loadInitial();
   }, []);
 
   /* Category helpers */
   const isAllSelected = selectedCategoryCodes.length === 0;
   const toggleCategory = (code) =>
-    setSelectedCategoryCodes((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]));
+    setSelectedCategoryCodes((prev) =>
+      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
+    );
 
   /* Filtering: use normalized campaign category code (string). If campaign has no category -> exclude when filter active */
   const filtered = isAllSelected
@@ -233,7 +282,10 @@ export default function Feed() {
   const formatValidUntil = (d) => {
     if (!d) return null;
     try {
-      return new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      return new Date(d).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+      });
     } catch {
       return null;
     }
@@ -251,7 +303,9 @@ export default function Feed() {
         <button
           onClick={() => setSelectedCategoryCodes([])}
           className={`flex h-8 items-center rounded-xl px-4 text-sm font-medium border ${
-            isAllSelected ? "bg-[#131118] text-white border-[#131118]" : "bg-[#f2f0f4] text-[#131118]"
+            isAllSelected
+              ? "bg-[#131118] text-white border-[#131118]"
+              : "bg-[#f2f0f4] text-[#131118]"
           }`}
         >
           All
@@ -264,7 +318,9 @@ export default function Feed() {
               key={cat.categoryCode}
               onClick={() => toggleCategory(cat.categoryCode)}
               className={`flex h-8 items-center rounded-xl px-4 text-sm font-medium border ${
-                sel ? "bg-[#131118] text-white border-[#131118]" : "bg-[#f2f0f4] text-[#131118]"
+                sel
+                  ? "bg-[#131118] text-white border-[#131118]"
+                  : "bg-[#f2f0f4] text-[#131118]"
               }`}
             >
               {cat.categoryName}
@@ -275,7 +331,9 @@ export default function Feed() {
 
       {/* Feed */}
       <section className="mt-2">
-        <h3 className="px-4 text-xl font-semibold text-gray-900">Trending Deals</h3>
+        <h3 className="px-4 text-xl font-semibold text-gray-900">
+          Trending Deals
+        </h3>
 
         {feedLoading ? (
           <>
@@ -293,19 +351,34 @@ export default function Feed() {
                 <div key={String(c.campaignId)} className="p-4 pb-2 pt-2">
                   <div className="flex items-stretch justify-between gap-4 rounded-xl bg-white p-4 shadow">
                     <div className="flex flex-[2_2_0px] flex-col gap-1">
-                      <p className="text-sm font-normal text-[#6e6388]">{c.title}</p>
+                      <p className="text-sm font-normal text-[#6e6388]">
+                        {c.title}
+                      </p>
 
-                      <button onClick={() => handleMerchantClick(c.merchantNameId)} className="text-left text-base font-bold text-[#131118]">
+                      <button
+                        onClick={() => handleMerchantClick(c.merchantNameId)}
+                        className="text-left text-base font-bold text-[#131118]"
+                      >
                         {name}
                       </button>
 
-                      {c.description && <p className="text-sm text-gray-600">{c.description}</p>}
-                      {c.validUntil && <p className="text-xs text-gray-500">Valid until: {formatValidUntil(c.validUntil)}</p>}
+                      {c.description && (
+                        <p className="text-sm text-gray-600">{c.description}</p>
+                      )}
+                      {c.validUntil && (
+                        <p className="text-xs text-gray-500">
+                          Valid until: {formatValidUntil(c.validUntil)}
+                        </p>
+                      )}
                     </div>
 
                     <div
                       className="aspect-video w-full flex-1 rounded-xl bg-cover bg-center bg-no-repeat"
-                      style={{ backgroundImage: img ? `url("${img + "?w=200&h=200&fit=crop"}")` : "none" }}
+                      style={{
+                        backgroundImage: img
+                          ? `url("${img + "?w=200&h=200&fit=crop"}")`
+                          : "none",
+                      }}
                     />
                   </div>
                 </div>
@@ -318,7 +391,11 @@ export default function Feed() {
                 disabled={pageLoading || !hasMore}
                 className="rounded-full bg-[#131118] px-6 py-2 text-sm font-semibold text-white shadow-sm disabled:opacity-60"
               >
-                {pageLoading ? "Loading..." : hasMore ? "Load more deals" : "No more deals"}
+                {pageLoading
+                  ? "Loading..."
+                  : hasMore
+                  ? "Load more deals"
+                  : "No more deals"}
               </button>
             </div>
           </>
@@ -327,7 +404,9 @@ export default function Feed() {
 
       {/* Categories grid */}
       <section className="mt-4">
-        <h3 className="mb-2 px-4 text-xl font-semibold text-gray-900">Categories</h3>
+        <h3 className="mb-2 px-4 text-xl font-semibold text-gray-900">
+          Categories
+        </h3>
 
         {categoriesLoading ? (
           <div className="grid grid-cols-2 gap-4 px-4">
@@ -338,9 +417,17 @@ export default function Feed() {
         ) : (
           <div className="grid grid-cols-2 gap-4 px-4">
             {categoryList.map((cat) => (
-              <button key={cat.categoryCode} onClick={() => navigate(`/discover/${cat.id}`)} className="flex flex-col items-start rounded-xl border bg-white p-4 shadow hover:bg-gray-50">
-                <p className="text-lg font-semibold text-gray-900">{cat.categoryName}</p>
-                <p className="text-xs text-gray-600">Nearby merchants & deals</p>
+              <button
+                key={cat.categoryCode}
+                onClick={() => navigate(`/discover/${cat.id}`)}
+                className="flex flex-col items-start rounded-xl border bg-white p-4 shadow hover:bg-gray-50"
+              >
+                <p className="text-lg font-semibold text-gray-900">
+                  {cat.categoryName}
+                </p>
+                <p className="text-xs text-gray-600">
+                  Nearby merchants & deals
+                </p>
               </button>
             ))}
           </div>

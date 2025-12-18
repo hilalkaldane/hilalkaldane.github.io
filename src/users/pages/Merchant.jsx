@@ -2,6 +2,18 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { merchantApi, campaignApi } from "../services/api";
 import { QRCodeCanvas } from "qrcode.react";
+import ReactGA from "react-ga4";
+
+export const trackCampaignIssued = ({
+  campaignId,
+  merchantId
+}) => {
+console.log(merchantId)
+  ReactGA.event("campaign_issued", {
+    campaign_id: campaignId,
+    merchant_id: merchantId
+  });
+};
 
 const ISSUED_COUPONS_STORAGE_KEY = "issuedCoupons";
 
@@ -165,6 +177,7 @@ export default function Merchant() {
           error: null,
         },
       }));
+      trackCampaignIssued({campaignId,merchantId:merchantKey})
     } catch (err) {
       setCampaignCouponState((prev) => ({
         ...prev,

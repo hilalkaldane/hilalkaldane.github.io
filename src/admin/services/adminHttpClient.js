@@ -4,7 +4,7 @@
 import { adminLocalStorage, getOrCreateDeviceId } from "./adminDevice.js";
 import { redirectToAdminLogin } from "./adminProtectedApi.js";
 
-const API_BASE = "http://192.168.1.104:8080";
+const API_BASE = "http://10.27.144.117:8080";
 
 
 

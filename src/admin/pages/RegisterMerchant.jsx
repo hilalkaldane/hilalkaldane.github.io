@@ -14,7 +14,7 @@ export default function RegisterMerchant() {
   const [form, setForm] = useState({
     name: "",
     merchantNameId: "",
-    email: "",
+    ownerName: "",
     phone: "",
     address: "",
     location: ["", ""], // lat, lng
@@ -78,6 +78,9 @@ export default function RegisterMerchant() {
     // Phone
     if (!/^[0-9]{10}$/.test(form.phone))
       e.phone = "10-digit Indian number required";
+
+    if (!/^[A-Za-z]{3,20}$/.test(form.ownerName))
+    e.ownerName = "3–20 chars. Letters only";
 
     // Location
     if (!form.location[0] || !form.location[1])
@@ -162,6 +165,14 @@ export default function RegisterMerchant() {
           onChange={(e) => updateField("phone", e.target.value)}
         />
         {errors.phone && <p className="text-red-600 text-sm">{errors.phone}</p>}
+
+        <input
+          className="w-full rounded border p-2"
+          placeholder="Owner Name"
+          value={form.ownerName}
+          onChange={(e) => updateField("ownerName", e.target.value)}
+        />
+        {errors.ownerName && <p className="text-red-600 text-sm">{errors.ownerName}</p>}
 
         <textarea
           className="w-full rounded border p-2"
