@@ -5,9 +5,7 @@ import { merchantProtectedApi } from "../services/merchantProtectedApi";
 
 const Section = ({ title, children }) => (
   <section className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
-    <h2 className="text-base font-semibold text-gray-800 mb-4">
-      {title}
-    </h2>
+    <h2 className="text-base font-semibold text-gray-800 mb-4">{title}</h2>
     {children}
   </section>
 );
@@ -31,18 +29,13 @@ const formatDate = (iso) => {
   return `${day}-${month}-${year}`;
 };
 
-
 /* ---------- Validation ---------- */
 
 const USERNAME_REGEX = /^[a-zA-Z]+(-[a-zA-Z]+)?$/;
 
 const isValidUsername = (u) => {
   const v = u.trim();
-  return (
-    v.length >= 3 &&
-    v.length <= 15 &&
-    USERNAME_REGEX.test(v)
-  );
+  return v.length >= 3 && v.length <= 15 && USERNAME_REGEX.test(v);
 };
 
 /* ---------- Main Component ---------- */
@@ -50,6 +43,7 @@ const isValidUsername = (u) => {
 export default function MerchantProfile() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [createUserError, setCreateUserError] = useState(null);
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -57,14 +51,20 @@ export default function MerchantProfile() {
     name: "",
     userName: "",
     phone: "",
-    password: ""
+    password: "",
   });
 
   useEffect(() => {
-    merchantProtectedApi.getProfile()
-      .then(res => setData(res))
+    merchantProtectedApi
+      .getProfile()
+      .then((res) => setData(res))
       .finally(() => setLoading(false));
   }, []);
+
+  function updateForm(key, value) {
+    setForm((f) => ({ ...f, [key]: value }));
+    setCreateUserError(null); // 🔥 clear error on any change
+  }
 
   if (loading) return <div className="p-6">Loading…</div>;
   if (!data) return <div className="p-6">Failed to load</div>;
@@ -90,7 +90,7 @@ export default function MerchantProfile() {
         name: form.name.trim(),
         userName: form.userName.trim(),
         phone: form.phone.trim(),
-        password: form.password
+        password: form.password,
         // 🔒 role NOT sent — backend enforces EMPLOYEE
       });
 
@@ -98,6 +98,8 @@ export default function MerchantProfile() {
       setData(refreshed);
       setShowAddForm(false);
       setForm({ name: "", userName: "", phone: "", password: "" });
+    } catch (error) {
+      setCreateUserError(error.message);
     } finally {
       setCreating(false);
     }
@@ -105,7 +107,6 @@ export default function MerchantProfile() {
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6 bg-gray-50">
-
       {/* Logged-in User */}
       <Section title="Logged-in User">
         <Row label="Name" value={loggedInUser.merchantUserName} />
@@ -121,7 +122,8 @@ export default function MerchantProfile() {
           <Row label="Business ID" value={business.merchantNameId} />
           <Row label="Phone" value={business.phone} />
           <Row label="Category" value={business.category} />
-          <Row label="Subcategories" value={business.subcategories?.join(", ")} />
+          <Row label="Subcategory" value={business.subcategory} />
+          <Row label="Offerings" value={business.offerings.join(" , ")} />
           <Row label="Status" value={business.status} />
           <Row label="Address" value={business.address} />
           <Row label="Created At" value={formatDate(business.createdAt)} />
@@ -132,9 +134,8 @@ export default function MerchantProfile() {
       {/* Employees */}
       {isOwner && (
         <Section title="Employees">
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            {employees.map(emp => (
+            {employees.map((emp) => (
               <div
                 key={emp.merchantUserNameId}
                 className="border border-gray-200 rounded-md p-4"
@@ -165,14 +166,14 @@ export default function MerchantProfile() {
                 className="w-full border p-2 rounded"
                 placeholder="Name (min 3 chars)"
                 value={form.name}
-                onChange={e => setForm({ ...form, name: e.target.value })}
+                onChange={(e) => updateForm("name", e.target.value)}
               />
 
               <input
                 className="w-full border p-2 rounded"
                 placeholder="Username (e.g. john-doe)"
                 value={form.userName}
-                onChange={e => setForm({ ...form, userName: e.target.value })}
+                onChange={(e) => updateForm("userName", e.target.value)}
               />
               {!isValidUsername(form.userName) && form.userName && (
                 <div className="text-xs text-red-600">
@@ -184,7 +185,7 @@ export default function MerchantProfile() {
                 className="w-full border p-2 rounded"
                 placeholder="Phone (required)"
                 value={form.phone}
-                onChange={e => setForm({ ...form, phone: e.target.value })}
+                onChange={(e) => updateForm("phone", e.target.value)}
               />
 
               {/* 🔒 password field */}
@@ -193,7 +194,7 @@ export default function MerchantProfile() {
                 className="w-full border p-2 rounded"
                 placeholder="Password (min 6 chars)"
                 value={form.password}
-                onChange={e => setForm({ ...form, password: e.target.value })}
+                onChange={(e) => updateForm("password", e.target.value)}
               />
 
               <div className="flex gap-2">
@@ -213,13 +214,17 @@ export default function MerchantProfile() {
               </div>
             </div>
           )}
+          {createUserError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+              {createUserError}
+            </div>
+          )}
 
           {!canAddEmployee && (
             <div className="text-sm text-gray-500">
               Employee limit reached (max 2)
             </div>
           )}
-
         </Section>
       )}
     </div>

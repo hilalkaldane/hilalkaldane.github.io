@@ -6,7 +6,7 @@ import { httpGet, httpPost, httpPut } from "./httpClient.js";
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
 const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
 export const supabase = createClient(supabaseUrl, supabaseKey);
-const API_BASE_URL = "http://10.27.144.117:8080"
+const API_BASE_URL = "http://192.168.1.104:8080"
 
 // --- INIT DATA ---
 export async function initData() {
@@ -41,108 +41,27 @@ export async function initData() {
 }
 
 // ---------------- CATEGORY API ----------------
-export const categoryApi = {
-  async listCategories() {
-    return await httpGet('/api/metadata/listCategoriesAndSubcategories')
-  }
+export const metadataApi = {
+   listCategoriesAndSubcategories: async()=>
+    httpGet('/api/metadata/listCategoriesAndSubcategories'),
+   listSubcategoriesByCategory: async(categoryCode) =>
+    httpGet(`/api/metadata/listSubcategoriesByCategory?categoryCode=${categoryCode}`)
 };
 
 // ---------------- MERCHANT API ----------------
 export const merchantApi = {
-  async listMerchants({ category }) {
-    const { data, error } = await supabase
-      .from("merchants")
-      .select("*, categories(label)")
-      .eq("category_id", category)
-      .order("id", { ascending: true });
-    if (error) throw error;
-    return data;
-  },
+   listMerchants: async() =>
+    httpGet(`/api/merchant/all`),
+  getMerchant: async (merchantNameId) => {
+    if (!merchantNameId) throw new Error("Merchant ID is required");
 
-  async getMerchant(id) {
-    if (!id) throw new Error("Merchant ID is required");
-    const { data: merchant, error } = await supabase
-      .from("merchants")
-      .select("*, categories(label,image)")
-      .eq("id", id)
-      .single();
-    if (error) throw error;
-
-    return {
-      ...merchant,
-      category: merchant.categories || null,
-    };
-  },
-  getMerchantLocal: async (id) => {
-    if (!id) throw new Error("Merchant ID is required");
-
-    const merchant = await httpGet(`/api/merchant/${id}`)
+    const merchant = await httpGet(`/api/merchant/${merchantNameId}`)
 
     return {
       ...merchant,
       category: merchant.category || null,
     };
   },
-  async dashboardMonthly(merchantId) {
-if (!merchantId) throw new Error("Merchant ID required");
-
-  const today = new Date();
-
-  // 3 days before today
-  const start = new Date(today);
-  start.setDate(today.getDate() - 5);
-
-  // 5 days after today
-  const end = new Date(today);
-  end.setDate(today.getDate() + 5);
-
-  const startStr = start.toISOString().slice(0, 10);
-  const endStr = end.toISOString().slice(0, 10);
-
-  console.log({ startStr, endStr });
-
-  // Fetch issued coupons
-  const { data: issuedData, error: issuedErr } = await supabase
-    .from("coupons")
-    .select("issued_at, campaign_id!inner(merchant_id)")
-    .gte("issued_at", startStr)
-    .lte("issued_at", endStr)
-    .eq("campaign_id.merchant_id", merchantId);
-
-  if (issuedErr) throw issuedErr;
-
-  // Fetch redeemed coupons
-  const { data: redeemedData, error: redeemedErr } = await supabase
-    .from("coupons")
-    .select("redeemed_at, campaign_id!inner(merchant_id)")
-    .gte("redeemed_at", startStr)
-    .lte("redeemed_at", endStr)
-    .eq("campaign_id.merchant_id", merchantId);
-
-  if (redeemedErr) throw redeemedErr;
-
-  // Build list of days in the range
-  const days = [];
-  const loopDate = new Date(start);
-  while (loopDate <= end) {
-    days.push(loopDate.toISOString().slice(0, 10));
-    loopDate.setDate(loopDate.getDate() + 1);
-  }
-
-  // Count issued per day
-  const issuedCounts = days.map(day =>
-    issuedData.filter(c => c.issued_at && c.issued_at.startsWith(day)).length
-  );
-
-  // Count redeemed per day
-  const redeemedCounts = days.map(day =>
-    redeemedData.filter(c => c.redeemed_at && c.redeemed_at.startsWith(day)).length
-  );
-
-  return { days, issued: issuedCounts, redeemed: redeemedCounts };
-  }
-
-
 };
 
 export const feedApi = {

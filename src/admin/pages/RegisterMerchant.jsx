@@ -1,25 +1,34 @@
-import React, { useEffect, useState } from "react";
+// src/client/pages/RegisterMerchant.jsx
+import React, { useEffect, useMemo, useState } from "react";
 import {
   adminProtectedApi,
   redirectToAdminLogin,
 } from "../services/adminProtectedApi";
 import { adminLocalStorage } from "../services/adminDevice";
 
-export default function RegisterMerchant() {
-    const adminToken = adminLocalStorage.getItem("adminAccessToken");
+export default function RegisterMerchant({ metadata }) {
+  const adminToken = adminLocalStorage.getItem("adminAccessToken");
+  if (!adminToken) redirectToAdminLogin();
 
-  const [categories, setCategories] = useState([]);
-  const [subcategories, setSubcategories] = useState([]);
+  const categories = metadata?.categories ?? [];
+  const subcategories = metadata?.subcategories ?? [];
+  const offerings = metadata?.offerings ?? [];
+
+  const [credentials, setCredentials] = useState(null);
+
+  /* ---------------- FORM STATE ---------------- */
 
   const [form, setForm] = useState({
     name: "",
     merchantNameId: "",
     ownerName: "",
+    ownerUsername: "",
     phone: "",
     address: "",
-    location: ["", ""], // lat, lng
+    location: ["", ""],
     categoryId: "",
-    subcategoryIds: [],
+    subcategoryId: "",
+    offeringIds: [],
     banner: "",
   });
 
@@ -27,20 +36,20 @@ export default function RegisterMerchant() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(null);
 
-  /* ------------------ AUTH + META ------------------ */
-  useEffect(() => {
-    if (!adminToken) redirectToAdminLogin();
+  /* ---------------- DERIVED ---------------- */
 
-    async function loadMeta() {
-      const res = await adminProtectedApi.getCategoriesAndSubcategories();
-      setCategories(res.categoryList || []);
-      setSubcategories(res.subcategoryList || []);
-    }
+  const filteredSubcategories = useMemo(
+    () => subcategories.filter((s) => s.categoryCode === form.categoryId),
+    [subcategories, form.categoryId]
+  );
 
-    loadMeta();
-  }, []);
+  const filteredOfferings = useMemo(
+    () => offerings.filter((o) => o.categoryCode === form.categoryId),
+    [offerings, form.categoryId]
+  );
 
-  /* ------------------ DEVICE LOCATION ------------------ */
+  /* ---------------- LOCATION ---------------- */
+
   function pickDeviceLocation() {
     if (!navigator.geolocation) {
       setErrors((e) => ({ ...e, location: "Geolocation not supported" }));
@@ -49,92 +58,122 @@ export default function RegisterMerchant() {
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const lat = Number(pos.coords.latitude.toFixed(6));
-        const lng = Number(pos.coords.longitude.toFixed(6));
-        setForm((f) => ({ ...f, location: [lat, lng] }));
+        setForm((f) => ({
+          ...f,
+          location: [
+            Number(pos.coords.latitude.toFixed(6)),
+            Number(pos.coords.longitude.toFixed(6)),
+          ],
+        }));
         setErrors((e) => ({ ...e, location: null }));
       },
-      () => {
-        setErrors((e) => ({ ...e, location: "Location permission denied" }));
-      }
+      () =>
+        setErrors((e) => ({
+          ...e,
+          location: "Location permission denied",
+        }))
     );
   }
 
-  /* ------------------ VALIDATION ------------------ */
+  /* ---------------- VALIDATION ---------------- */
+
   useEffect(() => {
     const e = {};
 
-    // Business name
     if (!/^[A-Za-z ,\-'.]{2,60}$/.test(form.name))
       e.name = "2–60 chars. Letters and , - ' . only";
 
-    // Username
-    if (!/^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)?$/.test(form.merchantNameId))
-      e.merchantNameId = "3–15 chars, max 2 words, '-' separated";
+    if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(form.merchantNameId))
+      e.merchantNameId = "3–15 chars, lowercase, '-' allowed";
 
     if (form.merchantNameId.length < 3 || form.merchantNameId.length > 15)
-      e.merchantNameId = "Username must be 3–15 characters";
+      e.merchantNameId = "Merchant username must be 3–15 characters";
 
-    // Phone
+    if (!/^[A-Za-z ]{3,20}$/.test(form.ownerName))
+      e.ownerName = "3–20 chars. Letters only";
+
+    if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(form.ownerUsername))
+      e.ownerUsername = "3–15 chars, lowercase, '-' allowed";
+
+    if (
+      form.ownerUsername.length < 3 ||
+      form.ownerUsername.length > 15
+    )
+      e.ownerUsername = "Owner username must be 3–15 characters";
+
     if (!/^[0-9]{10}$/.test(form.phone))
       e.phone = "10-digit Indian number required";
 
-    if (!/^[A-Za-z]{3,20}$/.test(form.ownerName))
-    e.ownerName = "3–20 chars. Letters only";
-
-    // Location
     if (!form.location[0] || !form.location[1])
       e.location = "Precise location required";
 
-    // Category
     if (!form.categoryId) e.categoryId = "Category is required";
+    if (!form.subcategoryId)
+      e.subcategoryId = "Exactly one subcategory required";
 
-    // Subcategories
-    if (form.subcategoryIds.length > 5)
-      e.subcategoryIds = "Max 5 subcategories allowed";
+    if (form.offeringIds.length > 5)
+      e.offeringIds = "Maximum 5 offerings allowed";
 
-    // Banner
     if (!form.banner) e.banner = "Banner is required";
 
     setErrors(e);
   }, [form]);
 
-  /* ------------------ HELPERS ------------------ */
+  /* ---------------- HELPERS ---------------- */
+
   function updateField(key, value) {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
-  function toggleSubcategory(code) {
+  function toggleOffering(code) {
     setForm((f) => {
-      if (f.subcategoryIds.includes(code)) {
+      if (f.offeringIds.includes(code)) {
         return {
           ...f,
-          subcategoryIds: f.subcategoryIds.filter((c) => c !== code),
+          offeringIds: f.offeringIds.filter((o) => o !== code),
         };
       }
-      if (f.subcategoryIds.length >= 5) return f;
-      return { ...f, subcategoryIds: [...f.subcategoryIds, code] };
+      if (f.offeringIds.length >= 5) return f;
+      return { ...f, offeringIds: [...f.offeringIds, code] };
     });
   }
 
-  /* ------------------ SUBMIT ------------------ */
+  /* ---------------- SUBMIT ---------------- */
+
   async function submit(e) {
     e.preventDefault();
     if (Object.keys(errors).length > 0) return;
 
     setLoading(true);
     try {
-      await adminProtectedApi.createMerchant({
-        ...form,
-        location: [Number(form.location[0]), Number(form.location[1])],
+      const res = await adminProtectedApi.createMerchant({
+        merchantNameId: form.merchantNameId,
+        name: form.name,
+        ownerName: form.ownerName,
+        ownerUsername: form.ownerUsername,
+        phone: form.phone,
+        address: form.address,
+        latitude: Number(form.location[0]),
+        longitude: Number(form.location[1]),
+        categoryId: form.categoryId,
+        subcategoryId: form.subcategoryId,
+        offeringsId: form.offeringIds,
+        banner: form.banner,
       });
+
+      setCredentials({
+        username: res.username,
+        password: res.password,
+      });
+
       setSuccess("Merchant registered successfully");
     } finally {
       setLoading(false);
     }
   }
 
-  /* ------------------ UI ------------------ */
+  /* ---------------- UI ---------------- */
+
   return (
     <div className="mx-auto max-w-xl p-6">
       <h1 className="mb-4 text-2xl font-bold">Register Merchant</h1>
@@ -150,12 +189,36 @@ export default function RegisterMerchant() {
 
         <input
           className="w-full rounded border p-2"
-          placeholder="Username"
+          placeholder="Merchant Username"
           value={form.merchantNameId}
-          onChange={(e) => updateField("merchantNameId", e.target.value)}
+          onChange={(e) =>
+            updateField("merchantNameId", e.target.value.toLowerCase())
+          }
         />
         {errors.merchantNameId && (
           <p className="text-red-600 text-sm">{errors.merchantNameId}</p>
+        )}
+
+        <input
+          className="w-full rounded border p-2"
+          placeholder="Owner Name"
+          value={form.ownerName}
+          onChange={(e) => updateField("ownerName", e.target.value)}
+        />
+        {errors.ownerName && (
+          <p className="text-red-600 text-sm">{errors.ownerName}</p>
+        )}
+
+        <input
+          className="w-full rounded border p-2"
+          placeholder="Owner Username"
+          value={form.ownerUsername}
+          onChange={(e) =>
+            updateField("ownerUsername", e.target.value.toLowerCase())
+          }
+        />
+        {errors.ownerUsername && (
+          <p className="text-red-600 text-sm">{errors.ownerUsername}</p>
         )}
 
         <input
@@ -165,21 +228,6 @@ export default function RegisterMerchant() {
           onChange={(e) => updateField("phone", e.target.value)}
         />
         {errors.phone && <p className="text-red-600 text-sm">{errors.phone}</p>}
-
-        <input
-          className="w-full rounded border p-2"
-          placeholder="Owner Name"
-          value={form.ownerName}
-          onChange={(e) => updateField("ownerName", e.target.value)}
-        />
-        {errors.ownerName && <p className="text-red-600 text-sm">{errors.ownerName}</p>}
-
-        <textarea
-          className="w-full rounded border p-2"
-          placeholder="Address"
-          value={form.address}
-          onChange={(e) => updateField("address", e.target.value)}
-        />
 
         <div className="flex gap-2">
           <input
@@ -214,7 +262,11 @@ export default function RegisterMerchant() {
         <select
           className="w-full rounded border p-2"
           value={form.categoryId}
-          onChange={(e) => updateField("categoryId", e.target.value)}
+          onChange={(e) => {
+            updateField("categoryId", e.target.value);
+            updateField("subcategoryId", "");
+            updateField("offeringIds", []);
+          }}
         >
           <option value="">Select Category</option>
           {categories.map((c) => (
@@ -224,40 +276,42 @@ export default function RegisterMerchant() {
           ))}
         </select>
 
-        {errors.categoryId && (
-          <p className="text-red-600 text-sm">{errors.categoryId}</p>
-        )}
+        <select
+          className="w-full rounded border p-2"
+          value={form.subcategoryId}
+          onChange={(e) => updateField("subcategoryId", e.target.value)}
+          disabled={!form.categoryId}
+        >
+          <option value="">Select Subcategory</option>
+          {filteredSubcategories.map((s) => (
+            <option key={s.subcategoryCode} value={s.subcategoryCode}>
+              {s.subcategoryName}
+            </option>
+          ))}
+        </select>
 
-        <div>
-          <p className="font-semibold text-sm">Subcategories (max 5)</p>
-
-          <div className="flex flex-wrap gap-2">
-            {subcategories.map((s) => {
-              const active = form.subcategoryIds.includes(s.subcategoryCode);
-              const disabled = !active && form.subcategoryIds.length >= 5;
-
-              return (
-                <button
-                  key={s.subcategoryCode}
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => toggleSubcategory(s.subcategoryCode)}
-                  className={`rounded-full border px-3 py-1 text-sm ${
-                    active ? "bg-black text-white" : "bg-gray-100"
-                  } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
-                >
-                  {s.subcategoryName}
-                </button>
-              );
-            })}
+        {filteredOfferings.length > 0 && (
+          <div>
+            <p className="font-semibold text-sm">Offerings (max 5)</p>
+            <div className="flex flex-wrap gap-2">
+              {filteredOfferings.map((o) => {
+                const active = form.offeringIds.includes(o.offeringCode);
+                return (
+                  <button
+                    key={o.offeringCode}
+                    type="button"
+                    onClick={() => toggleOffering(o.offeringCode)}
+                    className={`rounded-full border px-3 py-1 text-sm ${
+                      active ? "bg-black text-white" : "bg-gray-100"
+                    }`}
+                  >
+                    {o.offeringName}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-
-          {form.subcategoryIds.length >= 5 && (
-            <p className="mt-1 text-xs text-gray-600">
-              Maximum 5 subcategories allowed
-            </p>
-          )}
-        </div>
+        )}
 
         <input
           className="w-full rounded border p-2"
@@ -279,6 +333,52 @@ export default function RegisterMerchant() {
 
         {success && <p className="text-green-600 text-sm">{success}</p>}
       </form>
+
+      {credentials && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-lg">
+            <h2 className="text-xl font-bold mb-2">
+              Merchant Login Credentials
+            </h2>
+
+            <p className="text-sm text-gray-600 mb-4">
+              These credentials are shown <b>only once</b>. Copy securely.
+            </p>
+
+            <div className="space-y-3">
+              <div className="rounded border p-3">
+                <p className="text-xs text-gray-500">Username</p>
+                <p className="font-mono text-lg">{credentials.username}</p>
+              </div>
+
+              <div className="rounded border p-3">
+                <p className="text-xs text-gray-500">Temporary Password</p>
+                <p className="font-mono text-lg">{credentials.password}</p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                onClick={() =>
+                  navigator.clipboard.writeText(
+                    `Username: ${credentials.username}\nPassword: ${credentials.password}`
+                  )
+                }
+                className="rounded border px-4 py-2 text-sm"
+              >
+                Copy
+              </button>
+
+              <button
+                onClick={() => setCredentials(null)}
+                className="rounded bg-black px-4 py-2 text-sm text-white"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

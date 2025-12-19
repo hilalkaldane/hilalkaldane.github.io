@@ -5,16 +5,9 @@ import {
   redirectToMerchantLogin
 } from "../services/merchantProtectedApi";
 import { merchantLocalStorage } from "../services/merchantDevice";
+import { formatDate } from "../../shared/utilities";
 
 /* ---------- Date helper (DD-MM-YYYY) ---------- */
-const formatDate = (iso) => {
-  if (!iso) return "-";
-  const d = new Date(iso);
-  const dd = String(d.getDate()).padStart(2, "0");
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const yyyy = d.getFullYear();
-  return `${dd}-${mm}-${yyyy}`;
-};
 
 /* ---------- Build chart series + totals ---------- */
 const buildSeries = (data = []) => {

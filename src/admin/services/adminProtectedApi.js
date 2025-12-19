@@ -16,6 +16,8 @@ export const adminAuthApi = {
 
 export const adminProtectedApi = {
   getCategoriesAndSubcategories: async() => adminFetch("/api/metadata/listCategoriesAndSubcategories"),
+    getOfferings: async() => adminFetch("/api/metadata/listOfferings"),
+
   listMerchants: async() => adminFetch("/api/admin/merchants"),
   createMerchant: async (payload) =>
     adminFetch(`/api/admin/create-merchant`, {
@@ -31,6 +33,11 @@ export const adminProtectedApi = {
 
   createSubcategory: async (payload) =>
     adminFetch(`/api/admin/create-subcategory`, {
+      method: "POST",
+      body: payload,
+    }),
+  createOfferings: async (payload) =>
+    adminFetch(`/api/admin/create-offerings`, {
       method: "POST",
       body: payload,
     }),

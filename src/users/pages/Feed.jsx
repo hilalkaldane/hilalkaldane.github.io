@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { categoryApi, feedApi } from "../services/api";
+import { metadataApi, feedApi } from "../services/api";
 import { useNavigate } from "react-router-dom";
 import ReactGA from "react-ga4";
 import { getOrCreateDeviceId } from "../services/device";
+import { CacheKeys, CacheTTL } from "../../shared/cacheKeys";
 
 /* Constants */
-const STORAGE_KEY = "feedCache_v1";
-const CACHE_TTL_MS = 60 * 60 * 1000;
 const PAGE_SIZE = 20;
 
 /* Skeleton */
@@ -60,7 +59,7 @@ export default function Feed() {
   /* localStorage helpers */
   const readCache = () => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(CacheKeys.FEED);
       return raw ? JSON.parse(raw) : null;
     } catch {
       return null;
@@ -68,7 +67,7 @@ export default function Feed() {
   };
   const writeCache = (cache) => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(cache));
+      localStorage.setItem(CacheKeys.FEED, JSON.stringify(cache));
     } catch {}
   };
   const isCacheExpired = (cache) => {
@@ -77,7 +76,7 @@ export default function Feed() {
       const nextTs = Date.parse(cache.nextWindow);
       if (!Number.isNaN(nextTs)) return Date.now() > nextTs;
     }
-    if (cache.storedAt) return Date.now() - cache.storedAt > CACHE_TTL_MS;
+    if (cache.storedAt) return Date.now() - cache.storedAt > CacheTTL.HALF;
     return true;
   };
 
@@ -148,7 +147,7 @@ export default function Feed() {
   const loadCategories = async () => {
     setCategoriesLoading(true);
     try {
-      const res = await categoryApi.listCategories();
+      const res = await metadataApi.listCategoriesAndSubcategories();
       const cats = res?.categoryList
         .filter(Boolean)
         .map((c) => ({
@@ -399,38 +398,6 @@ export default function Feed() {
               </button>
             </div>
           </>
-        )}
-      </section>
-
-      {/* Categories grid */}
-      <section className="mt-4">
-        <h3 className="mb-2 px-4 text-xl font-semibold text-gray-900">
-          Categories
-        </h3>
-
-        {categoriesLoading ? (
-          <div className="grid grid-cols-2 gap-4 px-4">
-            {[...Array(4)].map((_, i) => (
-              <SkeletonCard key={i} />
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-4 px-4">
-            {categoryList.map((cat) => (
-              <button
-                key={cat.categoryCode}
-                onClick={() => navigate(`/discover/${cat.id}`)}
-                className="flex flex-col items-start rounded-xl border bg-white p-4 shadow hover:bg-gray-50"
-              >
-                <p className="text-lg font-semibold text-gray-900">
-                  {cat.categoryName}
-                </p>
-                <p className="text-xs text-gray-600">
-                  Nearby merchants & deals
-                </p>
-              </button>
-            ))}
-          </div>
         )}
       </section>
     </div>

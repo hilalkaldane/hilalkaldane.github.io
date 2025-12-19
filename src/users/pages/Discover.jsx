@@ -1,87 +1,147 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { merchantApi } from "../services/api";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { useParams } from "react-router-dom";
+import { merchantApi, metadataApi } from "../services/api";
+import { CacheKeys, CacheTTL } from "../../shared/cacheKeys";
 import MerchantCard from "../components/MerchantCard";
 
-export default function Discover() {
-  const { category } = useParams();
-  const [merchants, setMerchants] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState(""); // "near" | "budget" | ""
-  const [error, setError] = useState(null);
-  const nav = useNavigate();
+/* Cache */
 
-  const loadMerchants = useCallback(() => {
+export default function Discover() {
+  const { category } = useParams(); // categoryCode from path
+
+  const [merchants, setMerchants] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
+  const [ searchEnabled, setSearchEnabled] = useState(false);
+
+  const [selectedSubcats, setSelectedSubcats] = useState([]); // [] = All
+  const [search, setSearch] = useState("");
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  /* ---------- cache helpers ---------- */
+  const readCache = () => {
+    try {
+      const raw = localStorage.getItem(CacheKeys.DISCOVER_MERCHANTS);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const writeCache = (data) => {
+    if (!Array.isArray(data) || data.length === 0) return;
+
+    try {
+      localStorage.setItem(
+        CacheKeys.DISCOVER_MERCHANTS,
+        JSON.stringify({
+          storedAt: Date.now(),
+          merchants: data,
+        })
+      );
+    } catch {
+      // ignore quota / serialization errors
+    }
+  };
+
+  const isCacheValid = (cache) =>
+    cache && Date.now() - cache.storedAt < CacheTTL.HOUR;
+
+  /* ---------- data load ---------- */
+  const loadMerchants = useCallback(async () => {
     setLoading(true);
     setError(null);
 
-    merchantApi
-      .listMerchants({ category, search, filter })
-      .then((data) => {
-        setMerchants(data || []);
-      })
-      .catch((err) => {
-        console.error("Failed to load merchants:", err);
-        setError("Failed to load merchants.");
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [category, search, filter]);
+    try {
+      const cache = readCache();
+      console.log(cache);
+      
+      if (isCacheValid(cache)) {
+        setMerchants(cache.merchants || []);
+      } else {
+        const res = await merchantApi.listMerchants();
+        setMerchants(res || []);
+        writeCache(res || []);
+      }
+
+      const subs = await metadataApi.listSubcategoriesByCategory(category);
+      setSubcategories(subs || []);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load merchants");
+    } finally {
+      setLoading(false);
+    }
+  }, [category]);
 
   useEffect(() => {
+    setSelectedSubcats([]); // reset when category changes
     loadMerchants();
   }, [loadMerchants]);
 
+  /* ---------- filtering ---------- */
+  const filteredMerchants = useMemo(() => {
+    return (
+      merchants
+        .filter((m) => m.category === category)
+        .filter((m) => {
+          if (selectedSubcats.length === 0) return true;
+          return selectedSubcats.includes(m.subcategory);
+        })
+    );
+  }, [merchants, category, search, selectedSubcats]);
+
+  const toggleSubcat = (code) =>
+    setSelectedSubcats((prev) =>
+      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
+    );
+
+  const isAllSelected = selectedSubcats.length === 0;
+
+  /* ---------- UI ---------- */
   return (
-    <div className="px-4 pb-2">
-      {/* Search Bar */}
-      <div className="flex gap-3 items-center mt-2 mb-3">
+    <div className="px-4 pb-4">
+      {/* Category title */}
+      <h2 className="mt-2 mb-3 text-xl font-semibold capitalize">
+        {category.replaceAll("_", " ")}
+      </h2>
+
+      {/* Search */}
+      { searchEnabled && (<div className="flex gap-3 items-center mb-3">
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && loadMerchants()}
-          placeholder="Search merchants or deals"
+          placeholder="Search merchants"
           className="flex-1 py-2 px-3 rounded-lg border border-gray-200"
         />
-        <button
-          onClick={loadMerchants}
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg"
-        >
-          Search
-        </button>
-      </div>
+      </div>)}
 
-      {/* Filter Buttons */}
-      <div className="flex gap-2 overflow-auto mb-3">
+      {/* Subcategory pills */}
+      <div className="flex gap-2 overflow-auto mb-4">
         <button
-          onClick={() => {
-            setFilter("");
-            nav("/");
-          }}
+          onClick={() => setSelectedSubcats([])}
           className={`px-3 py-2 rounded-full text-sm ${
-            filter === "" ? "bg-blue-500 text-white" : "bg-gray-100"
+            isAllSelected ? "bg-black text-white" : "bg-gray-100"
           }`}
         >
           All
         </button>
-        <button
-          onClick={() => setFilter("near")}
-          className={`px-3 py-2 rounded-full text-sm ${
-            filter === "near" ? "bg-blue-500 text-white" : "bg-gray-100"
-          }`}
-        >
-          Near me
-        </button>
-        <button
-          onClick={() => setFilter("budget")}
-          className={`px-3 py-2 rounded-full text-sm ${
-            filter === "budget" ? "bg-blue-500 text-white" : "bg-gray-100"
-          }`}
-        >
-          Budget
-        </button>
+
+        {subcategories.map((s) => {
+          const active = selectedSubcats.includes(s.subcategoryCode);
+          return (
+            <button
+              key={s.subcategoryCode}
+              onClick={() => toggleSubcat(s.subcategoryCode)}
+              className={`px-3 py-2 rounded-full text-sm ${
+                active ? "bg-black text-white" : "bg-gray-100"
+              }`}
+            >
+              {s.subcategoryName}
+            </button>
+          );
+        })}
       </div>
 
       {/* Content */}
@@ -90,14 +150,12 @@ export default function Discover() {
 
       {!loading && !error && (
         <div className="space-y-3">
-          {merchants.map((m) => (
+          {filteredMerchants.map((m) => (
             <MerchantCard key={m.id} merchant={m} />
           ))}
 
-          {merchants.length === 0 && (
-            <div className="text-gray-500">
-              No merchants found in this category.
-            </div>
+          {filteredMerchants.length === 0 && (
+            <div className="text-gray-500">No merchants found.</div>
           )}
         </div>
       )}

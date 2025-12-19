@@ -5,7 +5,7 @@ import { FiHome, FiSearch, FiPlusSquare, FiInbox, FiUser } from "react-icons/fi"
 export default function BottomTabBar() {
   const tabs = [
     { to: "/", label: "Home", icon: <FiHome /> },
-    { to: "/discover", label: "Search", icon: <FiSearch /> },
+    { to: "/explore", label: "Explore", icon: <FiSearch /> },
     { to: "/profile", label: "Profile", icon: <FiUser /> }
   ];
 

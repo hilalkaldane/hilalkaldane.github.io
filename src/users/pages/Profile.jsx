@@ -2,6 +2,35 @@ import React, { useEffect, useState, useMemo } from "react";
 import { MERCHANTS } from "../../data/sampleData";
 import { Link } from "react-router-dom";
 import { customerApi } from "../services/api";
+import { CacheKeys } from "../../shared/cacheKeys";
+
+function loadAllIssuedCoupons() {
+  try {
+    const raw = localStorage.getItem(CacheKeys.ISSUED_COUPONS);
+    if (!raw) return [];
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return [];
+
+    const result = [];
+
+    Object.entries(parsed).forEach(([merchantKey, campaigns]) => {
+      Object.entries(campaigns || {}).forEach(([campaignId, c]) => {
+        result.push({
+          merchantKey,
+          campaignId,
+          couponCode: c.couponCode,
+          campaignTitle: c.campaignTitle,
+          createdAt: c.createdAt,
+        });
+      });
+    });
+
+    return result;
+  } catch {
+    return [];
+  }
+}
 
 const GENDER_OPTIONS = [
   { value: "MALE", label: "Male" },
@@ -17,6 +46,7 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState("");
+  const [issuedCoupons, setIssuedCoupons] = useState([]);
 
   const [editingName, setEditingName] = useState(false);
   const [editingGender, setEditingGender] = useState(false);
@@ -27,6 +57,7 @@ export default function Profile() {
       setError(null);
       try {
         const res = await customerApi.getMe();
+        setIssuedCoupons(loadAllIssuedCoupons);
         setCustomer(res);
         setName(res?.name || "");
         setGender(res?.gender || "");
@@ -94,9 +125,7 @@ export default function Profile() {
                 placeholder="Your name"
               />
             ) : (
-              <div className="text-lg font-semibold">
-                {name || "Guest"}
-              </div>
+              <div className="text-lg font-semibold">{name || "Guest"}</div>
             )}
 
             <button
@@ -120,7 +149,9 @@ export default function Profile() {
               <select
                 className="rounded border px-2 py-1 text-xs"
                 value={gender || ""}
-                onChange={(e) => {setGender(e.target.value)}}
+                onChange={(e) => {
+                  setGender(e.target.value);
+                }}
               >
                 <option value="">Select gender</option>
                 {GENDER_OPTIONS.map((g) => (
@@ -148,14 +179,10 @@ export default function Profile() {
         </div>
 
         {/* STATUS */}
-        {error && (
-          <div className="mt-2 text-xs text-red-600">{error}</div>
-        )}
+        {error && <div className="mt-2 text-xs text-red-600">{error}</div>}
 
         {successMessage && (
-          <div className="mt-1 text-xs text-green-600">
-            {successMessage}
-          </div>
+          <div className="mt-1 text-xs text-green-600">{successMessage}</div>
         )}
 
         {/* UPDATE BUTTON */}
@@ -171,29 +198,35 @@ export default function Profile() {
         )}
       </div>
 
-      {/* Coupons – unchanged */}
+      {/* Coupons */}
       <div className="mt-6">
         <h3 className="text-md font-semibold">Coupons</h3>
-        <div className="mt-3 space-y-2">
-          {MERCHANTS.slice(0, 2).map((m) => (
-            <Link
-              to={`/merchant/${m.id}`}
-              key={m.id}
-              className="flex items-center justify-between rounded-lg border bg-white p-3"
-            >
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-md bg-gray-100" />
+
+        {issuedCoupons.length === 0 ? (
+          <div className="mt-2 text-sm text-gray-500">
+            You haven’t issued any coupons yet.
+          </div>
+        ) : (
+          <div className="mt-3 space-y-2">
+            {issuedCoupons.map((c) => (
+              <Link
+                key={`${c.merchantKey}-${c.campaignId}`}
+                to={`/merchant/${c.merchantKey}`}
+                className="flex items-center justify-between rounded-lg border bg-white p-3"
+              >
                 <div>
-                  <div className="font-medium">{m.name}</div>
+                  <div className="font-medium">{c.campaignTitle}</div>
                   <div className="text-xs text-gray-500">
-                    {m.distanceKm} km
+                    Code: <span className="font-mono">{c.couponCode}</span>
                   </div>
                 </div>
-              </div>
-              <div>›</div>
-            </Link>
-          ))}
-        </div>
+                <div className="text-xs text-gray-400">
+                  {new Date(c.createdAt).toLocaleDateString()}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Preferences – unchanged */}

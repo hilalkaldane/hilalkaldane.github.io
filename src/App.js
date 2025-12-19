@@ -20,6 +20,7 @@ import MerchantLogin from "./merchant/pages/MerchantLogin";
 import AdminLogin from "./admin/components/AdminLogin";
 import RequireAdminAuth from "./admin/auth/requireAdminAuth";
 import AdminApp from "./admin/AdminApp";
+import Explore from "./users/pages/Explore";
 
 export default function App() {
   const loc = useLocation();
@@ -69,6 +70,7 @@ export default function App() {
           <Route path="/" element={<Feed />} />
           <Route path="/feed" element={<Feed />} />
           <Route path="/discover/:category?" element={<Discover />} />
+          <Route path="/explore" element={<Explore />} />
           <Route path="/merchant/:merchantNameId" element={<Merchant />} />
           <Route path="/profile" element={<Profile />} />
 

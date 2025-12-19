@@ -5,7 +5,7 @@ import { clearMerchantAuth } from "../auth/merchantAuth";
 import { redirectToMerchantLogin } from "./merchantProtectedApi.js";
 import { getOrCreateDeviceId, merchantLocalStorage } from "./merchantDevice";
 
-const API_BASE = "http://10.27.144.117:8080";
+const API_BASE = "http://192.168.1.104:8080";
 
 
 

@@ -3,24 +3,21 @@ import { useParams } from "react-router-dom";
 import { merchantApi, campaignApi } from "../services/api";
 import { QRCodeCanvas } from "qrcode.react";
 import ReactGA from "react-ga4";
+import { CacheKeys } from "../../shared/cacheKeys";
+import { formatDate } from "../../shared/utilities";
 
-export const trackCampaignIssued = ({
-  campaignId,
-  merchantId
-}) => {
-console.log(merchantId)
+export const trackCampaignIssued = ({ campaignId, merchantId }) => {
+  console.log(merchantId);
   ReactGA.event("campaign_issued", {
     campaign_id: campaignId,
-    merchant_id: merchantId
+    merchant_id: merchantId,
   });
 };
-
-const ISSUED_COUPONS_STORAGE_KEY = "issuedCoupons";
 
 // Read issued coupons for this merchant from localStorage
 function loadIssuedCouponsForMerchant(merchantNameId) {
   try {
-    const raw = localStorage.getItem(ISSUED_COUPONS_STORAGE_KEY);
+    const raw = localStorage.getItem(CacheKeys.ISSUED_COUPONS);
     if (!raw) return {};
     const all = JSON.parse(raw);
     if (!all || typeof all !== "object") return {};
@@ -33,7 +30,8 @@ function loadIssuedCouponsForMerchant(merchantNameId) {
 // Persist issued coupon for this merchant+campaign in localStorage
 function saveIssuedCoupon(merchantNameId, campaignId, payload) {
   try {
-    const raw = localStorage.getItem(ISSUED_COUPONS_STORAGE_KEY);
+    const raw = localStorage.getItem(CacheKeys.ISSUED_COUPONS);
+    console.log(raw);
     const all = raw ? JSON.parse(raw) : {};
     const existing = all && typeof all === "object" ? all : {};
 
@@ -47,10 +45,7 @@ function saveIssuedCoupon(merchantNameId, campaignId, payload) {
       createdAt: new Date().toISOString(),
     };
 
-    localStorage.setItem(
-      ISSUED_COUPONS_STORAGE_KEY,
-      JSON.stringify(existing)
-    );
+    localStorage.setItem(CacheKeys.ISSUED_COUPONS, JSON.stringify(existing));
   } catch {
     // ignore localStorage errors
   }
@@ -72,11 +67,20 @@ export default function Merchant() {
     default: "https://source.unsplash.com/400x300/?shopping",
   };
 
+  const getMapEmbedUrl = (merchant) => {
+    console.log(merchant);
+    if (merchant.loc[0] && merchant.loc[1]) {
+      return `https://www.google.com/maps?q=${merchant.loc[0]},${merchant.loc[1]}&z=15&output=embed`;
+    }
+
+    return null;
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const m = await merchantApi.getMerchantLocal(merchantNameId);
+        const m = await merchantApi.getMerchant(merchantNameId);
         setMerchant(m);
 
         const cs = await campaignApi.listCampaignByMerchant(merchantNameId);
@@ -89,16 +93,23 @@ export default function Merchant() {
           discountValue: c.discount
             ? Number(c.discount.replace(/[^\d]/g, ""))
             : 0,
-          startDate: c.created_at || c.createdAt || "",
-          endDate: c.valid_until || c.validUntil || "",
+          startDate: formatDate(c.createdAt || ""),
+          endDate: formatDate(c.validUntil || ""),
           terms: c.description || "",
         }));
 
-        setCampaigns(mapped);
+        const sorted = [...mapped].sort((a, b) => {
+          if (a.campaignType === "COUPON" && b.campaignType !== "COUPON")
+            return -1;
+          if (a.campaignType !== "COUPON" && b.campaignType === "COUPON")
+            return 1;
+          return 0;
+        });
+
+        setCampaigns(sorted);
 
         // hydrate coupon state from localStorage for this merchant
-        const merchantKey =
-          m.merchantNameId || m.merchantId || merchantNameId;
+        const merchantKey = m.merchantNameId || m.merchantId || merchantNameId;
         const stored = loadIssuedCouponsForMerchant(merchantKey);
 
         const initialCouponState = {};
@@ -177,7 +188,7 @@ export default function Merchant() {
           error: null,
         },
       }));
-      trackCampaignIssued({campaignId,merchantId:merchantKey})
+      trackCampaignIssued({ campaignId, merchantId: merchantKey });
     } catch (err) {
       setCampaignCouponState((prev) => ({
         ...prev,
@@ -316,9 +327,7 @@ export default function Merchant() {
 
                             <div className="mt-1 text-xs text-gray-800">
                               Code:{" "}
-                              <span className="font-mono">
-                                {state.code}
-                              </span>
+                              <span className="font-mono">{state.code}</span>
                             </div>
                           </>
                         ) : (
@@ -355,6 +364,38 @@ export default function Merchant() {
         <div className="mt-6">
           <h4 className="font-semibold">Details</h4>
           <p className="mt-2 text-sm text-gray-600">{merchant.details}</p>
+        </div>
+      )}
+
+      {/* Map */}
+      {getMapEmbedUrl(merchant) && (
+        <div className="mt-6">
+          <h3 className="mb-2 font-semibold">Location</h3>
+
+          <div className="overflow-hidden rounded-lg border">
+            <iframe
+              title="merchant-location"
+              src={getMapEmbedUrl(merchant)}
+              width="100%"
+              height="220"
+              style={{ border: 0 }}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </div>
+
+          <a
+            href={`https://www.google.com/maps/search/?api=1&query=${
+              merchant.loc[0] && merchant.loc[1]
+                ? `${merchant.loc[0]},${merchant.loc[1]}`
+                : `${merchant.loc[0]},${merchant.loc[1]}`
+            }`}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-2 inline-block text-sm text-blue-600 underline"
+          >
+            Directions to the {merchant.name}
+          </a>
         </div>
       )}
     </div>
