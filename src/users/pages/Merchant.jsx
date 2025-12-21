@@ -5,77 +5,81 @@ import { QRCodeCanvas } from "qrcode.react";
 import ReactGA from "react-ga4";
 import { CacheKeys } from "../../shared/cacheKeys";
 import { formatDate } from "../../shared/utilities";
+import CampaignCard from "../components/MerchantCampaignCard";
+import MerchantCampaignCard from "../components/MerchantCampaignCard";
 
+/* ---------------- Analytics ---------------- */
 export const trackCampaignIssued = ({ campaignId, merchantId }) => {
-  console.log(merchantId);
   ReactGA.event("campaign_issued", {
     campaign_id: campaignId,
     merchant_id: merchantId,
   });
 };
 
-// Read issued coupons for this merchant from localStorage
+/* ---------------- LocalStorage helpers ---------------- */
 function loadIssuedCouponsForMerchant(merchantNameId) {
   try {
     const raw = localStorage.getItem(CacheKeys.ISSUED_COUPONS);
     if (!raw) return {};
     const all = JSON.parse(raw);
-    if (!all || typeof all !== "object") return {};
-    return all[merchantNameId] || {};
+    return all?.[merchantNameId] || {};
   } catch {
     return {};
   }
 }
 
-// Persist issued coupon for this merchant+campaign in localStorage
-function saveIssuedCoupon(merchantNameId, campaignId, payload) {
+function saveIssuedCoupon(merchantNameId, campaignId, merchantName, payload) {
   try {
     const raw = localStorage.getItem(CacheKeys.ISSUED_COUPONS);
-    console.log(raw);
     const all = raw ? JSON.parse(raw) : {};
-    const existing = all && typeof all === "object" ? all : {};
-
-    if (!existing[merchantNameId]) {
-      existing[merchantNameId] = {};
-    }
-
-    existing[merchantNameId][campaignId] = {
+    if (!all[merchantNameId]) all[merchantNameId] = {};
+    all[merchantNameId][campaignId] = {
       couponCode: payload.couponCode,
       campaignTitle: payload.campaignTitle,
       createdAt: new Date().toISOString(),
+      merchantName: merchantName
     };
 
-    localStorage.setItem(CacheKeys.ISSUED_COUPONS, JSON.stringify(existing));
-  } catch {
-    // ignore localStorage errors
-  }
+    localStorage.setItem(CacheKeys.ISSUED_COUPONS, JSON.stringify(all));
+  } catch {}
 }
 
+/* ---------------- Small UI helper ---------------- */
+const InfoRow = ({ icon, label, children }) => (
+  <div className="flex items-start gap-3">
+    <span className="material-symbols-outlined text-text-subtle text-[18px]">
+      {icon}
+    </span>
+    <div className="text-sm">
+      <div className="text-text-subtle leading-none">{label}</div>
+      <div className="font-medium text-text-main-light dark:text-white">
+        {children}
+      </div>
+    </div>
+  </div>
+);
+
+/* ---------------- Component ---------------- */
 export default function Merchant() {
   const { merchantNameId } = useParams();
 
   const [merchant, setMerchant] = useState(null);
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const [redeemResult, setRedeemResult] = useState(null);
-
-  // per-campaign coupon state: { [campaignId]: { loading, code, error } }
   const [campaignCouponState, setCampaignCouponState] = useState({});
 
   const categoryImages = {
-    default: "https://source.unsplash.com/400x300/?shopping",
+    default: "https://source.unsplash.com/400x300/?restaurant,cafe",
   };
 
-  const getMapEmbedUrl = (merchant) => {
-    console.log(merchant);
-    if (merchant.loc[0] && merchant.loc[1]) {
-      return `https://www.google.com/maps?q=${merchant.loc[0]},${merchant.loc[1]}&z=15&output=embed`;
+  const getMapEmbedUrl = (m) => {
+    if (m?.loc?.[0] && m?.loc?.[1]) {
+      return `https://www.google.com/maps?q=${m.loc[0]},${m.loc[1]}&z=15&output=embed`;
     }
-
     return null;
   };
 
+  /* ---------------- Fetch data ---------------- */
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -88,45 +92,39 @@ export default function Merchant() {
         const mapped = cs.map((c) => ({
           id: c.id,
           title: c.title,
+          description: c.description,
+
+          offerType: c.offerType,
+          discount: c.discount ?? c.parameters?.discount ?? null,
+
+          mov: c.mov,
+          validUntil: c.validUntil,
+          termsConditions: c.termsConditions || [],
           campaignType: c.campaignType,
-          discountType: c.discount?.includes("%") ? "percentage" : "amount",
-          discountValue: c.discount
-            ? Number(c.discount.replace(/[^\d]/g, ""))
-            : 0,
-          startDate: formatDate(c.createdAt || ""),
-          endDate: formatDate(c.validUntil || ""),
-          terms: c.description || "",
         }));
 
-        const sorted = [...mapped].sort((a, b) => {
-          if (a.campaignType === "COUPON" && b.campaignType !== "COUPON")
-            return -1;
-          if (a.campaignType !== "COUPON" && b.campaignType === "COUPON")
-            return 1;
-          return 0;
-        });
+        mapped.sort((a, b) =>
+          a.campaignType === "COUPON" && b.campaignType !== "COUPON" ? -1 : 0
+        );
 
-        setCampaigns(sorted);
+        setCampaigns(mapped);
 
-        // hydrate coupon state from localStorage for this merchant
         const merchantKey = m.merchantNameId || m.merchantId || merchantNameId;
         const stored = loadIssuedCouponsForMerchant(merchantKey);
 
-        const initialCouponState = {};
+        const initialState = {};
         mapped.forEach((c) => {
-          const storedEntry = stored[c.id];
-          if (storedEntry && storedEntry.couponCode) {
-            initialCouponState[c.id] = {
+          if (stored?.[c.id]?.couponCode) {
+            initialState[c.id] = {
               loading: false,
-              code: storedEntry.couponCode,
+              code: stored[c.id].couponCode,
               error: null,
             };
           }
         });
-
-        setCampaignCouponState(initialCouponState);
+        setCampaignCouponState(initialState);
       } catch (err) {
-        console.error("Failed to load merchant or campaigns", err);
+        console.error("Failed to load merchant", err);
       } finally {
         setLoading(false);
       }
@@ -135,269 +133,167 @@ export default function Merchant() {
     fetchData();
   }, [merchantNameId]);
 
-  if (loading) {
-    return <div className="p-4">Loading merchant…</div>;
-  }
-
-  if (!merchant) {
-    return <div className="p-4 text-red-500">Merchant not found</div>;
-  }
-
-  const redeem = async (offer) => {
-    setRedeemResult({ loading: true });
-    try {
-      const res = await merchantApi.redeemOffer(merchant.id, offer.id);
-      setRedeemResult({ loading: false, res });
-    } catch (err) {
-      setRedeemResult({ loading: false, res: null });
-      alert("Failed to redeem: " + err.message);
-    }
-  };
-
+  /* ---------------- Actions ---------------- */
   const issueCouponForCampaign = async (campaignId) => {
     setCampaignCouponState((prev) => ({
       ...prev,
-      [campaignId]: {
-        ...(prev[campaignId] || {}),
-        loading: true,
-        error: null,
-      },
+      [campaignId]: { ...(prev[campaignId] || {}), loading: true, error: null },
     }));
 
     try {
       const coupon = await campaignApi.issueCouponForCampaign(campaignId);
-      const couponCode = coupon.couponCode;
-
       const merchantKey =
         merchant.merchantNameId || merchant.merchantId || merchantNameId;
+      const merchantName =
+        merchant.name || "";
       const campaign = campaigns.find((c) => c.id === campaignId);
 
-      // persist in localStorage
-      saveIssuedCoupon(merchantKey, campaignId, {
-        couponCode,
+      saveIssuedCoupon(merchantKey, campaignId, merchant.name , {
+        couponCode: coupon.couponCode,
         campaignTitle: campaign?.title || "",
       });
 
-      // update UI state
       setCampaignCouponState((prev) => ({
         ...prev,
         [campaignId]: {
-          ...(prev[campaignId] || {}),
           loading: false,
-          code: couponCode,
+          code: coupon.couponCode,
           error: null,
         },
       }));
+
       trackCampaignIssued({ campaignId, merchantId: merchantKey });
     } catch (err) {
       setCampaignCouponState((prev) => ({
         ...prev,
         [campaignId]: {
-          ...(prev[campaignId] || {}),
           loading: false,
           code: null,
-          error: err.message || "Failed to generate coupon",
+          error: err.message || "Failed to issue coupon",
         },
       }));
     }
   };
 
-  return (
-    <div className="px-4 pb-24 pt-2">
-      {/* Header */}
-      <div className="mt-2 mb-3">
-        <div className="text-xl font-semibold">{merchant.name}</div>
-        {(merchant.distanceKm || merchant.tagline) && (
-          <div className="text-sm text-gray-500">
-            {merchant.distanceKm ? `${merchant.distanceKm} km` : ""}
-            {merchant.distanceKm && merchant.tagline ? " • " : ""}
-            {merchant.tagline || ""}
-          </div>
-        )}
-      </div>
+  /* ---------------- Render ---------------- */
+  if (loading) return <div className="p-4">Loading merchant…</div>;
+  if (!merchant)
+    return <div className="p-4 text-red-500">Merchant not found</div>;
 
-      {/* Hero image */}
+  return (
+    <>
+      {/* ---------- FULL WIDTH HERO ---------- */}
       <div
-        className="mb-4 h-40 w-full rounded-md bg-cover bg-center"
+        className="w-full h-56 bg-cover bg-center bg-slate-100 dark:bg-white/5"
         style={{
           backgroundImage: `url(${
             merchant.profile || categoryImages.default
-          }${"?w=416&h=160&fit=crop&q=80&auto=format"})`,
+          }?w=1200&h=480&fit=crop&q=80)`,
         }}
       />
 
-      {/* Legacy offers (if still used) */}
-      {Array.isArray(merchant.offers) && merchant.offers.length > 0 && (
-        <div>
-          <h3 className="mb-2 font-semibold">Offers</h3>
-          <div className="space-y-3">
-            {merchant.offers.map((o) => (
-              <div key={o.id} className="rounded-lg border bg-white p-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-semibold">{o.title}</div>
-                    {o.expires && (
-                      <div className="text-sm text-gray-500">
-                        Valid until {o.expires}
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <button
-                      onClick={() => redeem(o)}
-                      className="rounded-md bg-black px-4 py-2 text-white"
-                    >
-                      Get Code
-                    </button>
-                  </div>
-                </div>
-                {redeemResult?.res && (
-                  <div className="mt-2 text-sm text-green-700">
-                    Code: {redeemResult.res.code}
-                  </div>
+      {/* ---------- PADDED CONTENT ---------- */}
+      <div className="px-6 py-4">
+        {/* ---------- Header (shifted below hero) ---------- */}
+        <div className="mb-4">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            {merchant.name}
+          </h1>
+          <p className="mt-1 text-sm text-text-subtle">{merchant.address}</p>
+        </div>
+
+        {/* ---------- Merchant Info Card ---------- */}
+        <section className="mb-6 rounded-3xl bg-card-light dark:bg-card-dark p-4 shadow-soft border border-border-light dark:border-border-dark space-y-4">
+          <InfoRow icon="location_on" label="Address">
+            {merchant.address}
+          </InfoRow>
+
+          <div className="flex items-start gap-3">
+            <span className="material-symbols-outlined text-text-subtle text-[18px]">
+              category
+            </span>
+            <div>
+              <div className="text-text-subtle text-sm">Category</div>
+              <div className="flex gap-2 mt-1 flex-wrap">
+                {merchant.category && (
+                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-accent-orange-soft text-primary capitalize">
+                    {merchant.category.replaceAll("-", " ")}
+                  </span>
                 )}
-                {redeemResult?.loading && (
-                  <div className="mt-2 text-sm text-gray-500">
-                    Getting code…
-                  </div>
+                {merchant.subcategory && (
+                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-white/10 capitalize">
+                    {merchant.subcategory.replaceAll("-", " ")}
+                  </span>
                 )}
               </div>
-            ))}
+            </div>
           </div>
-        </div>
-      )}
 
-      {/* Campaigns with coupon issue + QR */}
-      {Array.isArray(campaigns) && campaigns.length > 0 && (
-        <div className="mt-6">
-          <h3 className="mb-2 font-semibold">Campaigns</h3>
-          <div className="space-y-3">
-            {campaigns.map((c) => {
-              const state = campaignCouponState[c.id] || {};
-
-              return (
-                <div
-                  key={c.id}
-                  className="flex justify-between rounded-lg border bg-white p-3"
-                >
-                  {/* Left Column - Campaign Details */}
-                  <div className="flex-1 pr-4">
-                    <div className="font-semibold">{c.title}</div>
-                    <div className="mt-1 text-sm text-gray-700">
-                      {c.discountType === "percentage"
-                        ? `${c.discountValue}% off`
-                        : c.discountType === "amount"
-                        ? `₹${c.discountValue} off`
-                        : ""}
-                    </div>
-                    {(c.startDate || c.endDate) && (
-                      <div className="mt-1 text-xs text-gray-500">
-                        Valid from {c.startDate} to {c.endDate}
-                      </div>
-                    )}
-                    {c.terms && (
-                      <div className="mt-2 whitespace-pre-wrap text-xs text-gray-500">
-                        {c.terms}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Right Column - Coupon (only for COUPON type) */}
-                  <div className="flex w-40 flex-col items-center justify-center">
-                    {c.campaignType === "COUPON" ? (
-                      <>
-                        {state.code ? (
-                          <>
-                            <div className="mb-1 text-center text-sm font-medium text-green-700">
-                              Coupon issued
-                            </div>
-
-                            <QRCodeCanvas
-                              value={JSON.stringify({
-                                merchantNameId:
-                                  merchant.merchantNameId ||
-                                  merchant.merchantId ||
-                                  merchant.id,
-                                campaignId: c.id,
-                                couponCode: state.code,
-                                campaignTitle: c.title,
-                              })}
-                              size={96}
-                            />
-
-                            <div className="mt-1 text-xs text-gray-800">
-                              Code:{" "}
-                              <span className="font-mono">{state.code}</span>
-                            </div>
-                          </>
-                        ) : (
-                          <button
-                            onClick={() => issueCouponForCampaign(c.id)}
-                            disabled={state.loading}
-                            className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white disabled:opacity-60"
-                          >
-                            {state.loading ? "Generating..." : "Generate Code"}
-                          </button>
-                        )}
-
-                        {state.error && (
-                          <div className="mt-1 text-xs text-red-600">
-                            {state.error}
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <div className="text-xs text-gray-500">
-                        Non-coupon campaign
-                      </div>
-                    )}
+          {Array.isArray(merchant.offerings) &&
+            merchant.offerings.length > 0 && (
+              <div className="flex items-start gap-3">
+                <span className="material-symbols-outlined text-text-subtle text-[18px]">
+                  restaurant_menu
+                </span>
+                <div>
+                  <div className="text-text-subtle text-sm">Specialties</div>
+                  <div className="flex gap-2 mt-1 flex-wrap">
+                    {merchant.offerings.map((o) => (
+                      <span
+                        key={o}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-white/10 capitalize"
+                      >
+                        {o.replaceAll("_","")}
+                      </span>
+                    ))}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+              </div>
+            )}
 
-      {/* Extra merchant details if present */}
-      {merchant.details && (
-        <div className="mt-6">
-          <h4 className="font-semibold">Details</h4>
-          <p className="mt-2 text-sm text-gray-600">{merchant.details}</p>
-        </div>
-      )}
+          <InfoRow icon="verified" label="Status">
+            <span
+              className={`font-semibold ${
+                merchant.status === "ACTIVE" ? "text-green-600" : "text-red-600"
+              }`}
+            >
+              {merchant.status === "ACTIVE"
+                ? "Open for deals"
+                : merchant.status}
+            </span>
+          </InfoRow>
+        </section>
+        {/* ---------- Campaigns ---------- */}
+        <section className=" space-y-5">
+          <h2 className="text-lg font-semibold px-2">Available Deals</h2>
 
-      {/* Map */}
-      {getMapEmbedUrl(merchant) && (
-        <div className="mt-6">
-          <h3 className="mb-2 font-semibold">Location</h3>
-
-          <div className="overflow-hidden rounded-lg border">
-            <iframe
-              title="merchant-location"
-              src={getMapEmbedUrl(merchant)}
-              width="100%"
-              height="220"
-              style={{ border: 0 }}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
+          {campaigns.map((c) => (
+            <MerchantCampaignCard
+              key={c.id}
+              campaign={c}
+              issuedState={campaignCouponState[c.id]}
+              merchantKey={merchant.merchantNameId}
+              onIssue={issueCouponForCampaign}
             />
-          </div>
+          ))}
+        </section>
 
-          <a
-            href={`https://www.google.com/maps/search/?api=1&query=${
-              merchant.loc[0] && merchant.loc[1]
-                ? `${merchant.loc[0]},${merchant.loc[1]}`
-                : `${merchant.loc[0]},${merchant.loc[1]}`
-            }`}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-2 inline-block text-sm text-blue-600 underline"
-          >
-            Directions to the {merchant.name}
-          </a>
-        </div>
-      )}
-    </div>
+        {/* ---------- Map ---------- */}
+        {getMapEmbedUrl(merchant) && (
+          <section className="mt-8">
+            <h3 className="mb-2 px-2 text-lg font-semibold">Location</h3>
+            <div className="overflow-hidden rounded-2xl border border-border-light dark:border-border-dark">
+              <iframe
+                title="merchant-location"
+                src={getMapEmbedUrl(merchant)}
+                width="100%"
+                height="220"
+                loading="lazy"
+              />
+            </div>
+          </section>
+        )}
+      </div>
+    </>
   );
 }

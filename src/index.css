@@ -9,5 +9,5 @@ html {
 
 /* small helper to mimic app container */
 .app-safe {
-  @apply max-w-md mx-auto h-screen bg-white text-gray-900;
+  @apply max-w-md mx-auto;
 }

@@ -7,33 +7,43 @@ export default function MerchantCard({ merchant }) {
   return (
     <div
       onClick={() => nav(`/merchant/${merchant.merchantNameId}`)}
-      className="flex gap-3 items-center p-3 rounded-lg border border-gray-100 bg-white shadow-sm"
+      className="group relative flex w-full flex-col overflow-hidden bg-card-light dark:bg-card-dark rounded-3xl shadow-soft dark:shadow-none border border-border-light dark:border-border-dark group active:scale-[0.99] transition-transform duration-100"
       role="button"
-      tabIndex={0}
     >
-      <div
-        className="aspect-video w-full flex-1 rounded-xl bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: merchant.profile
-            ? `url("${merchant.profile}${"?w=416&h=160&fit=crop&q=80&auto=format"}")`
-            : "none",
-        }}
-      />
-      <div className="flex-1 min-w-0">
-        <div className="font-medium truncate">{merchant.name}</div>
-        <div className="text-sm text-gray-500">
-          {merchant.distancekm} km • {merchant.tagline}
+      <div className="relative h-52 w-full overflow-hidden">
+        <div
+          className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+          style={{
+            backgroundImage: merchant.profile
+              ? `url("${
+                  merchant.profile
+                }${"?w=416&h=160&fit=crop&q=80&auto=format"}")`
+              : "none",
+          }}
+        />
+      </div>
+      <div className="flex flex-col p-4 pb-5">
+        <div className="flex justify-between items-start">
+          <div className="flex flex-col">
+            <h3 className="text-text-main-light dark:text-white text-[17px] font-bold">
+              {merchant.name}
+            </h3>
+            <p className="text-[14px] font-medium text-slate-400 mt-1">
+              {merchant.address}
+            </p>
+          </div>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {merchant.offerings?.map((item, idx) => (
+            <span
+              key={item}
+              className="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-500 tracking-wide capitalize"
+            >
+              {item.trim()}
+            </span>
+          ))}
         </div>
       </div>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          nav(`/merchant/${merchant.merchantNameId}`);
-        }}
-        className="ml-2 px-3 py-1 bg-gray-100 rounded-md text-sm"
-      >
-        View
-      </button>
     </div>
   );
 }

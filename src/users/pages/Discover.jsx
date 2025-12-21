@@ -11,7 +11,7 @@ export default function Discover() {
 
   const [merchants, setMerchants] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
-  const [ searchEnabled, setSearchEnabled] = useState(false);
+  const [searchEnabled, setSearchEnabled] = useState(false);
 
   const [selectedSubcats, setSelectedSubcats] = useState([]); // [] = All
   const [search, setSearch] = useState("");
@@ -56,7 +56,7 @@ export default function Discover() {
     try {
       const cache = readCache();
       console.log(cache);
-      
+
       if (isCacheValid(cache)) {
         setMerchants(cache.merchants || []);
       } else {
@@ -82,14 +82,12 @@ export default function Discover() {
 
   /* ---------- filtering ---------- */
   const filteredMerchants = useMemo(() => {
-    return (
-      merchants
-        .filter((m) => m.category === category)
-        .filter((m) => {
-          if (selectedSubcats.length === 0) return true;
-          return selectedSubcats.includes(m.subcategory);
-        })
-    );
+    return merchants
+      .filter((m) => m.category === category)
+      .filter((m) => {
+        if (selectedSubcats.length === 0) return true;
+        return selectedSubcats.includes(m.subcategory);
+      });
   }, [merchants, category, search, selectedSubcats]);
 
   const toggleSubcat = (code) =>
@@ -101,44 +99,54 @@ export default function Discover() {
 
   /* ---------- UI ---------- */
   return (
-    <div className="px-4 pb-4">
-      {/* Category title */}
-      <h2 className="mt-2 mb-3 text-xl font-semibold capitalize">
-        {category.replaceAll("_", " ")}
-      </h2>
-
+    <div className="px-6 py-4">
+      <header className="flex items-center justify-between z-10">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white capitalize">
+            {category.replaceAll("-", " ")}
+          </h1>
+          <p className="text-sm font-medium text-slate-400 mt-0.5">
+            Explore the merchants around you.
+          </p>
+        </div>
+      </header>
       {/* Search */}
-      { searchEnabled && (<div className="flex gap-3 items-center mb-3">
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search merchants"
-          className="flex-1 py-2 px-3 rounded-lg border border-gray-200"
-        />
-      </div>)}
+      {searchEnabled && (
+        <div className="flex gap-3 items-center mb-3">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search merchants"
+            className="flex-1 py-2 px-3 rounded-lg border border-gray-200"
+          />
+        </div>
+      )}
 
-      {/* Subcategory pills */}
-      <div className="flex gap-2 overflow-auto mb-4">
+      <div className="flex overflow-x-auto no-scrollbar gap-3 pb-4 pt-4">
         <button
           onClick={() => setSelectedSubcats([])}
-          className={`px-3 py-2 rounded-full text-sm ${
-            isAllSelected ? "bg-black text-white" : "bg-gray-100"
+          className={`flex-shrink-0 px-4 py-1.5 border border-border-light text-sm font-semibold rounded-full shadow-sm ${
+            isAllSelected
+              ? "bg-black dark:bg-white text-white dark:text-black"
+              : "bg-white dark:bg-black text-black dark:text-white"
           }`}
         >
           All
         </button>
 
-        {subcategories.map((s) => {
-          const active = selectedSubcats.includes(s.subcategoryCode);
+        {subcategories.map((subcat) => {
+          const sel = selectedSubcats.includes(subcat.subcategoryCode);
           return (
             <button
-              key={s.subcategoryCode}
-              onClick={() => toggleSubcat(s.subcategoryCode)}
-              className={`px-3 py-2 rounded-full text-sm ${
-                active ? "bg-black text-white" : "bg-gray-100"
+              key={subcat.subcategoryCode}
+              onClick={() => toggleSubcat(subcat.subcategoryCode)}
+              className={`flex-shrink-0 px-4 py-1.5 border border-border-light text-sm font-semibold rounded-full shadow-sm ${
+                sel
+                  ? "bg-black dark:bg-white text-white dark:text-black"
+                  : "bg-white dark:bg-black text-black dark:text-white"
               }`}
             >
-              {s.subcategoryName}
+              {subcat.subcategoryName}
             </button>
           );
         })}
@@ -147,18 +155,19 @@ export default function Discover() {
       {/* Content */}
       {loading && <div className="text-gray-500">Loading merchants…</div>}
       {error && <div className="text-red-500">{error}</div>}
+      <main className="flex flex-col gap-5">
+        {!loading && !error && (
+          <div className="space-y-5">
+            {filteredMerchants.map((m) => (
+              <MerchantCard key={m.merchantNameId} merchant={m} />
+            ))}
 
-      {!loading && !error && (
-        <div className="space-y-3">
-          {filteredMerchants.map((m) => (
-            <MerchantCard key={m.id} merchant={m} />
-          ))}
-
-          {filteredMerchants.length === 0 && (
-            <div className="text-gray-500">No merchants found.</div>
-          )}
-        </div>
-      )}
+            {filteredMerchants.length === 0 && (
+              <div className="text-gray-500">No merchants found.</div>
+            )}
+          </div>
+        )}
+      </main>
     </div>
   );
 }

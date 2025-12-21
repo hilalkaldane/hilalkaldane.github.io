@@ -75,14 +75,6 @@ export const feedApi = {
 export const campaignApi = {
   getActiveCampaigns: async () => {
     return await httpGet(`api/campaigns/active-campaigns`)
-  }, 
-  async listAllCampaigns() {
-    const { data, error } = await supabase
-      .from("campaigns")
-      .select("*, merchants(name)")
-      .order("id", { ascending: true });
-    if (error) throw error;
-    return data;
   },
   async listCampaignByMerchant(merchantId) {
     return await httpGet(`/api/campaigns/merchant/${merchantId}`)
@@ -92,80 +84,9 @@ export const campaignApi = {
   async issueCouponForCampaign(campaignId) {
     return await httpPost(`/api/redemption/${campaignId}/issue`)
   },
-
-  async redeemCoupon(merchantId, couponCode) {
-    const { data: coupon, error } = await supabase
-      .from("coupons")
-      .select("*")
-      .eq("code", couponCode)
-      .single();
-
-    console.log("First Passed")
-
-    if (error) throw error;
-
-    if (!coupon) {
-      return { success: false, message: "Coupon not found" };
-    }
-
-    if (coupon.redeemed_at) {
-      return { success: false, message: "Coupon already redeemed" };
-    }
-
-    // Update redeemed_at timestamp
-    const { data, error: redeemErr } = await supabase
-      .from("coupons")
-      .update({ redeemed_at: new Date().toISOString() })
-      .eq("code", couponCode)
-      .select()
-      .single();
-
-    if (redeemErr) throw redeemErr;
-
-    return { success: true, code: data.code, redeemedAt: data.redeemed_at };
-  },
-
-  async createCampaign({ merchantId, name, discountType, discountValue, startDate, endDate, terms }) {
-    const discount =
-      discountType === "percentage"
-        ? `${Number(discountValue)}% off`
-        : discountType === "flat"
-          ? `₹${Number(discountValue)} off`
-          : null;
-
-    const { data, error } = await supabase
-      .from("campaigns")
-      .insert([
-        {
-          merchant_id: merchantId,
-          title: name,
-          description: terms || null,
-          discount,
-          valid_until: endDate || null,
-          created_at: new Date().toISOString().slice(0, 10),
-        },
-      ])
-      .select();
-    if (error) throw error;
-    return data[0];
-  },
 };
 
 // ---------------- ADMIN UTILITIES ----------------
-export const adminApi = {
-  async adminResetData() {
-    await initData();
-  },
-  async adminCreateMerchant({ name, address, category }) {
-    if (!name || !category) throw new Error("Name and category are required");
-    const { data, error } = await supabase
-      .from("merchants")
-      .insert([{ name, address, category_id: category }])
-      .select();
-    if (error) throw error;
-    return data[0];
-  },
-};
 
 // sketch, not required but implied
 export const customerApi = {

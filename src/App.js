@@ -42,7 +42,7 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center">
+      <div className="flex w-full items-center justify-center">
         <p>Loading initial data...</p>
       </div>
     );
@@ -53,13 +53,13 @@ export default function App() {
 
   return (
     <div
-      className="relative flex size-full min-h-screen flex-col bg-slate-50 group/design-root overflow-x-hidden"
+      className="relative min-h-screen flex w-full flex-col max-w-md mx-auto bg-background-light dark:bg-background-dark border-slate-100 dark:border-slate-800"
     >
       {/* Mobile header for customers only */}
       {!isMerchantRoute && !isAdminRoute && <MobileHeader />}
 
       <main
-        className="flex-1 overflow-auto pb-16 overflow-auto"
+        className="flex-1 overflow-auto overflow-auto mb-14"
       >
         
         <Routes>
