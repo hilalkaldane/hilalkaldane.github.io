@@ -7,18 +7,79 @@ import { getOrCreateDeviceId, merchantLocalStorage } from "./merchantDevice";
 
 const API_BASE = "http://192.168.1.104:8080";
 
+/**
+ * 🔁 Refresh access token ONCE
+ * Returns new accessToken or null
+ */
+async function refreshMerchantToken() {
+  const refreshToken = merchantLocalStorage.getItem("refreshToken");
+  if (!refreshToken) return null;
 
+  try {
+    const merchantDeviceId = getOrCreateDeviceId();
 
-async function handleResponse(res) {
-  // 🔐 Handle auth failures globally
-  if (res.status === 401 || res.status === 403) {
-    console.log("UnAuthorized")
-    redirectToMerchantLogin();
+    const headers = {
+      "Content-Type": "application/json",
+      "X-Device-Id": merchantDeviceId,
+    };
+
+    const res = await fetch(`${API_BASE}/api/merchant-auth/refresh`, {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!res.ok) {
+      clearMerchantAuth();
+      return null;
+    }
+
+    const json = await res.json();
+    const data = json?.data;
+
+    if (!data?.accessToken) return null;
+
+    merchantLocalStorage.setItem("accessToken", data.accessToken);
+    if (data.refreshToken) {
+      merchantLocalStorage.setItem("refreshToken", data.refreshToken);
+    }
+
+    return data.accessToken;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Central response handler
+ */
+async function handleResponse(res, retryFn, alreadyRetried) {
+  if (res.status === 401) {
+    // 🔁 Attempt refresh only once
+    console.log("Unauthorized");
+
+    if (!alreadyRetried) {
+      console.log("retrying");
+      const newToken = await refreshMerchantToken();
+      if (newToken) {
+        return retryFn(true);
+      }
+    }
+
+    // ❌ Refresh failed or already retried
+    clearMerchantAuth();
+
+    // defer redirect so fetch can finish cleanly
+    setTimeout(() => {
+      redirectToMerchantLogin();
+    }, 0);
+
     throw new Error("Unauthorized");
   }
 
   const contentType = res.headers.get("content-type") || "";
   const isJson = contentType.includes("application/json");
+
   const body = isJson
     ? await res.json().catch(() => null)
     : await res.text().catch(() => null);
@@ -30,22 +91,21 @@ async function handleResponse(res) {
     throw err;
   }
 
-  // ✅ your backend wraps data inside { data }
+  // ✅ Backend wraps payload in { data }
   return body?.data;
 }
 
-export async function httpPost(path, payload) {
-  return request(path, {
-    method: "POST",
-    body: payload != null ? JSON.stringify(payload) : undefined,
-  });
-}
-
-export async function merchantFetch(path, options = {}) {
+/**
+ * Merchant authenticated fetch
+ */
+export async function merchantFetch(
+  path,
+  options = {},
+  alreadyRetried = false
+) {
   const url = `${API_BASE}${path}`;
   const merchantDeviceId = getOrCreateDeviceId();
   const token = merchantLocalStorage.getItem("accessToken");
-  console.log("Token from merchantFetch" + token)
 
   const headers = {
     "Content-Type": "application/json",
@@ -57,6 +117,7 @@ export async function merchantFetch(path, options = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
+  console.log("calling backend")
   const res = await fetch(url, {
     credentials: "same-origin",
     headers,
@@ -67,5 +128,9 @@ export async function merchantFetch(path, options = {}) {
         : options.body,
   });
 
-  return handleResponse(res);
+  return handleResponse(
+    res,
+    (retried) => merchantFetch(path, options, retried),
+    alreadyRetried
+  );
 }

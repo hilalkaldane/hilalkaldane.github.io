@@ -95,8 +95,6 @@ export default function Feed() {
 
   const navigate = useNavigate();
 
-  const pillBase = "px-2 py-1.5 rounded-full text-sm font-medium ";
-
   /* ================== CACHE HELPERS ================== */
   const readCache = () => {
     try {
