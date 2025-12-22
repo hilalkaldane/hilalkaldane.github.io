@@ -4,8 +4,10 @@ import { merchantProtectedApi } from "../services/merchantProtectedApi";
 /* ---------- UI Helpers ---------- */
 
 const Section = ({ title, children }) => (
-  <section className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
-    <h2 className="text-base font-semibold text-gray-800 mb-4">{title}</h2>
+  <section className="bg-card-light dark:bg-card-dark rounded-lg p-5 shadow-sm">
+    <h2 className="text-base font-semibold text-text-main-light dark:text-white text-gray-800 mb-4">
+      {title}
+    </h2>
     {children}
   </section>
 );
@@ -13,7 +15,7 @@ const Section = ({ title, children }) => (
 const Row = ({ label, value }) => (
   <div className="flex justify-between gap-4 py-1 text-sm">
     <span className="text-gray-500">{label}</span>
-    <span className="font-medium text-gray-900 text-right break-all">
+    <span className="font-medium text-gray-900 text-right break-all text-text-main-light dark:text-white">
       {value ?? "-"}
     </span>
   </div>
@@ -106,7 +108,17 @@ export default function MerchantProfile() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6 bg-gray-50">
+    <div className="max-w-4xl mx-auto p-6 space-y-6 dark:bg-background-dark">
+      {/* ---------- FULL WIDTH HERO ---------- */}
+      {isOwner &&
+        business && (
+          <div
+            className="w-full h-56 bg-cover bg-center bg-slate-100 dark:bg-white/5"
+            style={{
+              backgroundImage: `url(https://faydapoint-media-dev.s3.ap-south-1.amazonaws.com/${business.heroImage})`,
+            }}
+          />
+        )}
       {/* Logged-in User */}
       <Section title="Logged-in User">
         <Row label="Name" value={loggedInUser.merchantUserName} />
@@ -134,7 +146,7 @@ export default function MerchantProfile() {
       {/* Employees */}
       {isOwner && (
         <Section title="Employees">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-text-main-light dark:text-white">
             {employees.map((emp) => (
               <div
                 key={emp.merchantUserNameId}
@@ -144,7 +156,7 @@ export default function MerchantProfile() {
                 <div className="text-sm text-gray-600">
                   {emp.merchantUserEmail}
                 </div>
-                <span className="inline-block mt-2 text-xs px-2 py-1 rounded bg-gray-100">
+                <span className="inline-block mt-2 text-xs px-2 py-1 rounded bg-gray-100 dark:text-black">
                   {emp.merchantUserRole}
                 </span>
               </div>

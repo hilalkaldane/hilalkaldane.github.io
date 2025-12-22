@@ -124,12 +124,12 @@ export default function ActiveCampaigns() {
   if (error) return <div className="p-4 text-red-600">{error}</div>;
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-6 dark:text-white">
 
       {/* ---------------- LISTING SECTION ---------------- */}
       <section className="space-y-2">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
             Listing Campaign
           </h3>
           <span className="text-xs text-gray-500">
@@ -137,13 +137,13 @@ export default function ActiveCampaigns() {
           </span>
         </div>
 
-        <div className="text-xs text-gray-600">
+        <div className="text-xs text-gray-600 dark:text-white">
           Only one listing can be active at a time. Creating a new listing will
           override the existing one.
         </div>
 
         {listingCampaigns.length === 0 && (
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-gray-500 dark:text-white">
             No active listing campaign
           </div>
         )}
@@ -156,22 +156,22 @@ export default function ActiveCampaigns() {
       </section>
 
       {/* ---------------- COUPON SECTION ---------------- */}
-      <section className="space-y-2">
+      <section className="space-y-2 dark:text-white">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
             Coupon Campaigns
           </h3>
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-gray-500 dark:text-white">
             {activeCouponCount}/3 active
           </span>
         </div>
 
-        <div className="text-xs text-gray-600">
+        <div className="text-xs text-gray-600 dark:text-white">
           You can have up to three active coupon campaigns.
         </div>
 
         {couponCampaigns.length === 0 && (
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-gray-500 dark:text-white">
             No active coupon campaigns
           </div>
         )}
@@ -189,7 +189,7 @@ export default function ActiveCampaigns() {
       <button
         onClick={() => navigate("/client/create-campaign")}
         disabled={!canCreateCampaign}
-        className="w-full rounded-lg bg-black py-2 text-sm font-semibold text-white disabled:opacity-50"
+        className="w-full rounded-lg bg-black py-2 text-sm font-semibold text-white disabled:opacity-50 dark:border dark:border-light"
       >
         Create Campaign
       </button>
@@ -211,10 +211,10 @@ function CampaignCard({ campaign, onDisable, disabling }) {
   const isCoupon = campaign.campaignType === "COUPON";
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:bg-card-dark">
       <div className="flex justify-between items-start">
         <div>
-          <h4 className="font-semibold text-gray-900">
+          <h4 className="font-semibold text-gray-900 dark:text-white">
             {campaign.title}
           </h4>
           <p className="text-xs text-gray-500">
@@ -222,13 +222,13 @@ function CampaignCard({ campaign, onDisable, disabling }) {
           </p>
         </div>
 
-        <span className="text-xs rounded bg-green-100 px-2 py-1 text-green-700">
+        <span className="text-xs rounded bg-green-100 px-2 py-1 text-green-700 dark:bg-white dark:text-black ">
           ACTIVE
         </span>
       </div>
 
       {campaign.description && (
-        <p className="mt-2 text-sm text-gray-700">
+        <p className="mt-2 text-sm text-gray-700 dark:text-white">
           {campaign.description}
         </p>
       )}

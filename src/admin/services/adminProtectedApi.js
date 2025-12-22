@@ -71,7 +71,15 @@ export const adminProtectedApi = {
   deactivateCampaign: async(campaignId, merchantNameId) =>
     adminFetch(`/api/admin/merchants/${merchantNameId}/campaigns/${campaignId}/deactivate`, {
       method: "PATCH"
-    })
+    }),
+  presignMerchantBanner: async(payload) => adminFetch(`/api/admin/presign/merchant-banner`, {
+      method: "POST",
+      body: payload,
+    }),
+  presignMerchantImages: async(payload) => adminFetch(`/api/admin/presign/merchant-images`, {
+      method: "POST",
+      body: payload,
+    }),
 };
 
 export function redirectToAdminLogin() {

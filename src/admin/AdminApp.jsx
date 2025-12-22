@@ -39,6 +39,10 @@ export default function AdminApp() {
       .then(([catSubRes, offerings]) => {
         if (cancelled) return;
 
+        console.log(catSubRes.categoryList);
+        console.log(catSubRes.subcategoryList);
+        console.log(offerings);
+
         const combined = {
           categories: catSubRes.categoryList ?? [],
           subcategories: catSubRes.subcategoryList ?? [],
@@ -46,10 +50,7 @@ export default function AdminApp() {
         };
 
         setMetadata(combined);
-        adminLocalStorage.setItem(
-          METADATA_KEY,
-          JSON.stringify(combined)
-        );
+        adminLocalStorage.setItem(METADATA_KEY, JSON.stringify(combined));
         setLoading(false);
       })
       .catch(() => {
@@ -73,9 +74,7 @@ export default function AdminApp() {
         element={
           <AdminCategories
             metadata={metadata}
-            invalidateMetadata={() =>
-              setMetadataVersion((v) => v + 1)
-            }
+            invalidateMetadata={() => setMetadataVersion((v) => v + 1)}
           />
         }
       />
@@ -85,15 +84,9 @@ export default function AdminApp() {
         element={<RegisterMerchant metadata={metadata} />}
       />
 
-      <Route
-        path="/create-campaign"
-        element={<CreateCampaignAdmin />}
-      />
+      <Route path="/create-campaign" element={<CreateCampaignAdmin />} />
 
-      <Route
-        path="/campaigns"
-        element={<ActiveCampaignsAdmin />}
-      />
+      <Route path="/campaigns" element={<ActiveCampaignsAdmin />} />
     </Routes>
   );
 }

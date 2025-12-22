@@ -9,32 +9,25 @@ const API_BASE = "http://192.168.1.104:8080";
 
 
 async function handleResponse(res) {
-  console.log("handle res "+res)
-  // 🔐 Handle auth failures globally
-  if (res.status === 401 || res.status === 403) {
-    console.log(res)
-    redirectToAdminLogin();
-    throw new Error(res.message);
-  }
-
-    if (res.status === 409) {
-    alert(await res.json().data);
-  }
- 
   const contentType = res.headers.get("content-type") || "";
   const isJson = contentType.includes("application/json");
+
   const body = isJson
     ? await res.json().catch(() => null)
     : await res.text().catch(() => null);
 
+  if (res.status === 401 || res.status === 403) {
+    redirectToAdminLogin();
+    throw new Error(body?.message || "Unauthorized");
+  }
+
   if (!res.ok) {
     const err = new Error(body?.message || res.statusText || "Request failed");
     err.status = res.status;
-    err.body = body;
     throw err;
   }
 
-  // ✅ your backend wraps data inside { data }
+  // 🔙 RESTORE OLD CONTRACT
   return body?.data;
 }
 
@@ -49,7 +42,6 @@ export async function adminFetch(path, options = {}) {
   const url = `${API_BASE}${path}`;
   const adminDeviceId = getOrCreateDeviceId();
   const token = adminLocalStorage.getItem("adminAccessToken");
-  console.log("admin Token "+token)
   const headers = {
     "Content-Type": "application/json",
     "X-Device-Id": adminDeviceId,
@@ -69,7 +61,35 @@ export async function adminFetch(path, options = {}) {
         ? JSON.stringify(options.body)
         : options.body,
   });
-  console.log("fetch respponse "+res)
 
   return handleResponse(res);
+}
+
+export async function adminFetchRaw(path, options = {}) {
+  const url = `${API_BASE}${path}`;
+  const token = adminLocalStorage.getItem("adminAccessToken");
+
+  const res = await fetch(url, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...(options.headers || {}),
+    },
+    ...options,
+    body:
+      options.body && typeof options.body !== "string"
+        ? JSON.stringify(options.body)
+        : options.body,
+  });
+
+  const body = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    const err = new Error(body?.message || "Request failed");
+    err.status = res.status;
+    err.body = body;
+    throw err;
+  }
+
+  return body; // full envelope
 }

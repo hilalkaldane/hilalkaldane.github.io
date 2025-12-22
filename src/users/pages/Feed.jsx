@@ -32,10 +32,10 @@ const FEED_TIPS = [
     subtitle: "Only one active deal per merchant is shown.",
   },
   {
-    icon: "📍",
-    title: "Deals near you",
-    subtitle: "Location is used only to show nearby offers.",
-  },
+    icon: "🔥",
+    title: "Trending Deals",
+    subtitle: "Only best of the deals are shown here."
+  }
 ];
 
 /* ================== INFO CARD ================== */

@@ -22,7 +22,7 @@ export default function AdminLogin() {
       });
       console.log(tokenResponse)
       saveAdminAuth(tokenResponse);
-      navigate("/admin/dashboard", { replace: true });
+      navigate("/admin/active-campaigns", { replace: true });
     } catch (err) {
       console.log(err)
       setError(err?.body?.message || err.message || "Login failed");

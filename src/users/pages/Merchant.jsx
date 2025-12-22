@@ -186,9 +186,9 @@ export default function Merchant() {
       <div
         className="w-full h-56 bg-cover bg-center bg-slate-100 dark:bg-white/5"
         style={{
-          backgroundImage: `url(${
-            merchant.profile || categoryImages.default
-          }?w=1200&h=480&fit=crop&q=80)`,
+          backgroundImage: `url(https://faydapoint-media-dev.s3.ap-south-1.amazonaws.com/${
+            merchant.heroImage || categoryImages.default
+          })`,
         }}
       />
 

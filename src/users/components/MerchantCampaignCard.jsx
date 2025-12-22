@@ -21,7 +21,7 @@ export default function MerchantCampaignCard({
   } = campaign;
 
   const isCoupon = campaignType === "COUPON";
-  const [showTerms, setShowTerms] = useState(false);
+  const [showTerms, setShowTerms] = useState(true);
 
   const safeIssuedState = issuedState ?? {};
 

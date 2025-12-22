@@ -56,7 +56,7 @@ export default function FeedCampaignCard({ campaign, onClick }) {
           className="w-24 h-24 rounded-xl bg-cover bg-center bg-slate-100"
           style={{
             backgroundImage: merchantProfile
-              ? `url("${merchantProfile}?w=200&h=200&fit=crop")`
+              ? `url(https://faydapoint-media-dev.s3.ap-south-1.amazonaws.com/${merchantProfile})`
               : "none",
           }}
         />

@@ -14,10 +14,10 @@ export default function MerchantCard({ merchant }) {
         <div
           className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
           style={{
-            backgroundImage: merchant.profile
-              ? `url("${
-                  merchant.profile
-                }${"?w=416&h=160&fit=crop&q=80&auto=format"}")`
+            backgroundImage: merchant.listImage
+              ? `url(https://faydapoint-media-dev.s3.ap-south-1.amazonaws.com/${
+                  merchant.listImage
+                })`
               : "none",
           }}
         />

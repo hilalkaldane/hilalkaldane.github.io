@@ -1,5 +1,7 @@
 // src/client/pages/RegisterMerchant.jsx
 import React, { useEffect, useMemo, useState } from "react";
+import Cropper from "react-easy-crop";
+
 import {
   adminProtectedApi,
   redirectToAdminLogin,
@@ -15,6 +17,34 @@ export default function RegisterMerchant({ metadata }) {
   const offerings = metadata?.offerings ?? [];
 
   const [credentials, setCredentials] = useState(null);
+  const [bannerFile, setBannerFile] = useState(null);
+
+  // zoom (1 = cover fit, >1 = zoom in)
+  const [bannerZoom, setBannerZoom] = useState(1);
+  const [thumbZoom, setThumbZoom] = useState(1);
+
+  // banner crop state
+  const [bannerCrop, setBannerCrop] = useState({ x: 0, y: 0 });
+  const [bannerCropPx, setBannerCropPx] = useState(null);
+
+  // thumb crop state
+  const [thumbCrop, setThumbCrop] = useState({ x: 0, y: 0 });
+  const [thumbCropPx, setThumbCropPx] = useState(null);
+
+  // NEW: thumbnail upload
+  const [thumbFile, setThumbFile] = useState(null);
+
+  // NEW: crop state (banner)
+  const [bannerPreview, setBannerPreview] = useState(null);
+  const [bannerOffset, setBannerOffset] = useState({ x: 0, y: 0 });
+
+  // NEW: crop state (thumb)
+  const [thumbPreview, setThumbPreview] = useState(null);
+  const [thumbOffset, setThumbOffset] = useState({ x: 0, y: 0 });
+
+  // drag helpers
+  const [dragging, setDragging] = useState(null); // "banner" | "thumb" | null
+  const dragStart = React.useRef({ x: 0, y: 0 });
 
   /* ---------------- FORM STATE ---------------- */
 
@@ -48,6 +78,65 @@ export default function RegisterMerchant({ metadata }) {
     [offerings, form.categoryId]
   );
 
+  async function generateBannerImages(file, offset, zoom) {
+    const img = new Image();
+    img.src = URL.createObjectURL(file);
+    await new Promise((r) => (img.onload = r));
+
+    return {
+      hero: await cropWithPixels(img, bannerCropPx, 900, 450),
+      list: await cropWithPixels(img, bannerCropPx, 800, 400),
+    };
+  }
+
+  async function generateThumbImage(file, offset, zoom) {
+    const img = new Image();
+    img.src = URL.createObjectURL(file);
+    await new Promise((r) => (img.onload = r));
+
+    return cropWithPixels(img, thumbCropPx, 300, 300);
+  }
+
+  function startDrag(type, e) {
+    setDragging(type);
+    dragStart.current = { x: e.clientX, y: e.clientY };
+  }
+
+  function onDrag(e) {
+    if (!dragging) return;
+
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+
+    dragStart.current = { x: e.clientX, y: e.clientY };
+
+    const SENSITIVITY = 1 / 300;
+
+    if (dragging === "banner") {
+      setBannerOffset((o) => ({
+        x: Math.max(-1, Math.min(1, o.x + dx * SENSITIVITY)),
+        y: Math.max(-1, Math.min(1, o.y + dy * SENSITIVITY)),
+      }));
+    } else {
+      setThumbOffset((o) => ({
+        x: Math.max(-1, Math.min(1, o.x + dx * SENSITIVITY)),
+        y: Math.max(-1, Math.min(1, o.y + dy * SENSITIVITY)),
+      }));
+    }
+  }
+
+  function stopDrag() {
+    setDragging(null);
+  }
+  useEffect(() => {
+    window.addEventListener("mousemove", onDrag);
+    window.addEventListener("mouseup", stopDrag);
+    return () => {
+      window.removeEventListener("mousemove", onDrag);
+      window.removeEventListener("mouseup", stopDrag);
+    };
+  }, [dragging]);
+
   /* ---------------- LOCATION ---------------- */
 
   function pickDeviceLocation() {
@@ -75,9 +164,15 @@ export default function RegisterMerchant({ metadata }) {
     );
   }
 
+  function handlePhoneChange(e) {
+    const digitsOnly = e.target.value.replace(/\D/g, "");
+    updateField("phone", digitsOnly.slice(0, 10));
+  }
+
   /* ---------------- VALIDATION ---------------- */
 
   useEffect(() => {
+    if (success) setSuccess(null);
     const e = {};
 
     if (!/^[A-Za-z ,\-'.]{2,60}$/.test(form.name))
@@ -95,14 +190,14 @@ export default function RegisterMerchant({ metadata }) {
     if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(form.ownerUsername))
       e.ownerUsername = "3–15 chars, lowercase, '-' allowed";
 
-    if (
-      form.ownerUsername.length < 3 ||
-      form.ownerUsername.length > 15
-    )
+    if (form.ownerUsername.length < 3 || form.ownerUsername.length > 15)
       e.ownerUsername = "Owner username must be 3–15 characters";
 
     if (!/^[0-9]{10}$/.test(form.phone))
       e.phone = "10-digit Indian number required";
+
+    if (form.address.length > 200)
+      e.address = "Address cannot exceed 200 characters";
 
     if (!form.location[0] || !form.location[1])
       e.location = "Precise location required";
@@ -114,10 +209,11 @@ export default function RegisterMerchant({ metadata }) {
     if (form.offeringIds.length > 5)
       e.offeringIds = "Maximum 5 offerings allowed";
 
-    if (!form.banner) e.banner = "Banner is required";
+    if (!bannerFile) e.banner = "Banner image is required";
+    if (!thumbFile) e.thumb = "Thumbnail image is required";
 
     setErrors(e);
-  }, [form]);
+  }, [form, bannerFile, thumbFile]);
 
   /* ---------------- HELPERS ---------------- */
 
@@ -145,7 +241,79 @@ export default function RegisterMerchant({ metadata }) {
     if (Object.keys(errors).length > 0) return;
 
     setLoading(true);
+    setErrors({}); // clear previous submit errors
+
     try {
+      let heroKey, listKey, thumbKey;
+
+      try {
+        console.log("Calling presign");
+
+        // presign ONCE
+        const presign = await adminProtectedApi.presignMerchantImages({
+          merchantNameId: form.merchantNameId,
+          files: [
+            { name: "hero.jpg" },
+            { name: "list.jpg" },
+            { name: "thumb.jpg" },
+          ],
+        });
+
+        console.log("PRESIGN RESPONSE:", presign);
+
+        if (
+          !presign ||
+          !presign.files ||
+          !presign.files.hero ||
+          !presign.files.list ||
+          !presign.files.thumb
+        ) {
+          throw new Error("Invalid presign response from server");
+        }
+
+        // generate images
+        const bannerImages = await generateBannerImages(
+          bannerFile,
+          bannerOffset,
+          bannerZoom
+        );
+        const thumbImage = await generateThumbImage(
+          thumbFile,
+          thumbOffset,
+          thumbZoom
+        );
+
+        // upload (fail-fast)
+
+        if (!bannerCropPx || !thumbCropPx) {
+          throw new Error("Please crop images before submitting");
+        }
+        await Promise.all([
+          fetch(presign.files.hero.uploadUrl, {
+            method: "PUT",
+            headers: { "Content-Type": "image/jpeg" },
+            body: bannerImages.hero,
+          }),
+          fetch(presign.files.list.uploadUrl, {
+            method: "PUT",
+            headers: { "Content-Type": "image/jpeg" },
+            body: bannerImages.list,
+          }),
+          fetch(presign.files.thumb.uploadUrl, {
+            method: "PUT",
+            headers: { "Content-Type": "image/jpeg" },
+            body: thumbImage,
+          }),
+        ]);
+
+        heroKey = presign.files.hero.key;
+        listKey = presign.files.list.key;
+        thumbKey = presign.files.thumb.key;
+      } catch (err) {
+        console.log(err.message);
+        throw new Error("Image upload failed");
+      }
+
       const res = await adminProtectedApi.createMerchant({
         merchantNameId: form.merchantNameId,
         name: form.name,
@@ -158,18 +326,46 @@ export default function RegisterMerchant({ metadata }) {
         categoryId: form.categoryId,
         subcategoryId: form.subcategoryId,
         offeringsId: form.offeringIds,
-        banner: form.banner,
+        heroImage: heroKey,
+        listImage: listKey,
+        thumbnailImage: thumbKey,
       });
 
+      setSuccess("Merchant registered successfully");
       setCredentials({
         username: res.username,
         password: res.password,
       });
-
-      setSuccess("Merchant registered successfully");
+    } catch (err) {
+      setErrors((prev) => ({
+        ...prev,
+        submit: err.message || "Registration failed",
+      }));
     } finally {
       setLoading(false);
     }
+  }
+  function cropWithPixels(img, crop, targetW, targetH) {
+    const canvas = document.createElement("canvas");
+    canvas.width = targetW;
+    canvas.height = targetH;
+    const ctx = canvas.getContext("2d");
+
+    ctx.drawImage(
+      img,
+      crop.x,
+      crop.y,
+      crop.width,
+      crop.height,
+      0,
+      0,
+      targetW,
+      targetH
+    );
+
+    return new Promise((res) =>
+      canvas.toBlob((b) => res(b), "image/jpeg", 0.8)
+    );
   }
 
   /* ---------------- UI ---------------- */
@@ -223,11 +419,27 @@ export default function RegisterMerchant({ metadata }) {
 
         <input
           className="w-full rounded border p-2"
-          placeholder="Phone"
+          placeholder="Phone (10-digit)"
           value={form.phone}
-          onChange={(e) => updateField("phone", e.target.value)}
+          onChange={handlePhoneChange}
+          inputMode="numeric"
+          pattern="[0-9]*"
+          maxLength={10}
         />
         {errors.phone && <p className="text-red-600 text-sm">{errors.phone}</p>}
+
+        {/* ADDRESS */}
+        <textarea
+          className="w-full rounded border p-2"
+          placeholder="Business Address"
+          rows={2}
+          value={form.address}
+          onChange={(e) => updateField("address", e.target.value)}
+        />
+
+        {errors.address && (
+          <p className="text-red-600 text-sm">{errors.address}</p>
+        )}
 
         <div className="flex gap-2">
           <input
@@ -313,15 +525,99 @@ export default function RegisterMerchant({ metadata }) {
           </div>
         )}
 
+        {/* BANNER IMAGE */}
+        <label className="text-sm font-medium">
+          Banner Image (Hero + List)
+        </label>
+
         <input
-          className="w-full rounded border p-2"
-          placeholder="Banner Image URL"
-          value={form.banner}
-          onChange={(e) => updateField("banner", e.target.value)}
+          type="file"
+          accept="image/jpeg,image/png"
+          className="w-full rounded border p-2 text-sm"
+          onChange={(e) => {
+            const f = e.target.files?.[0] || null;
+            setBannerFile(f);
+            setBannerPreview(f ? URL.createObjectURL(f) : null);
+            setBannerOffset({ x: 0, y: 0 });
+            setBannerZoom(1);
+          }}
         />
-        {errors.banner && (
-          <p className="text-red-600 text-sm">{errors.banner}</p>
+
+        {bannerPreview && (
+          <div className="relative w-full h-48 bg-black">
+            <Cropper
+              image={bannerPreview}
+              crop={bannerCrop}
+              zoom={bannerZoom}
+              aspect={2 / 1}
+              onCropChange={setBannerCrop}
+              onZoomChange={setBannerZoom}
+              onCropComplete={(_, croppedAreaPixels) =>
+                setBannerCropPx(croppedAreaPixels)
+              }
+            />
+          </div>
         )}
+
+        <div className="flex items-center gap-3 mt-2">
+          <span className="text-xs text-gray-600">Zoom</span>
+          <input
+            type="range"
+            min="1"
+            max="3"
+            step="0.05"
+            value={bannerZoom}
+            onChange={(e) => setBannerZoom(Number(e.target.value))}
+            className="w-full"
+          />
+        </div>
+
+        <label className="text-sm font-medium mt-4">Feed Thumbnail</label>
+
+        <input
+          type="file"
+          accept="image/jpeg,image/png"
+          className="w-full rounded border p-2 text-sm"
+          onChange={(e) => {
+            const f = e.target.files?.[0] || null;
+            setThumbFile(f);
+            setThumbPreview(f ? URL.createObjectURL(f) : null);
+            setThumbOffset({ x: 0, y: 0 });
+            setThumbZoom(1);
+          }}
+        />
+        <p className="text-xs text-gray-500">
+          Drag to reposition • Use zoom to adjust framing
+        </p>
+        {thumbPreview && (
+          <div className="relative w-40 h-40 bg-black">
+            <Cropper
+              image={thumbPreview}
+              crop={thumbCrop}
+              zoom={thumbZoom}
+              aspect={1}
+              onCropChange={setThumbCrop}
+              onZoomChange={setThumbZoom}
+              onCropComplete={(_, croppedAreaPixels) =>
+                setThumbCropPx(croppedAreaPixels)
+              }
+            />
+          </div>
+        )}
+
+        <div className="flex items-center gap-3 mt-2">
+          <span className="text-xs text-gray-600">Zoom</span>
+          <input
+            type="range"
+            min="1"
+            max="3"
+            step="0.05"
+            value={thumbZoom}
+            onChange={(e) => setThumbZoom(Number(e.target.value))}
+            className="w-full"
+          />
+        </div>
+        {errors.thumb && <p className="text-red-600 text-sm">{errors.thumb}</p>}
 
         <button
           type="submit"
@@ -332,6 +628,9 @@ export default function RegisterMerchant({ metadata }) {
         </button>
 
         {success && <p className="text-green-600 text-sm">{success}</p>}
+        {errors.submit && (
+          <p className="text-red-600 text-sm">{errors.submit}</p>
+        )}
       </form>
 
       {credentials && (
