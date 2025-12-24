@@ -17,7 +17,7 @@ export default function FeedCampaignCard({ campaign, onClick }) {
 
   const headline = buildOfferHeadline({ offerType, discount });
   const cta = buildCtaCopy({ offerType, discount });
-  const BUCKET_BASE = process.env.REACT_APP_;
+  const BUCKET_BASE = process.env.REACT_APP_MEDIA_BUCKET_BASE;
 
   return (
     <article className="relative flex flex-col bg-card-light dark:bg-card-dark rounded-3xl p-4 shadow-soft border border-border-light dark:border-border-dark active:scale-[0.99] transition-transform">

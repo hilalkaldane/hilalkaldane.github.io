@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { merchantProtectedApi } from "../services/merchantProtectedApi";
-const BUCKET_BASE = process.env.REACT_APP_;
+const BUCKET_BASE = process.env.REACT_APP_MEDIA_BUCKET_BASE;
 
 /* ---------- UI Helpers ---------- */
 

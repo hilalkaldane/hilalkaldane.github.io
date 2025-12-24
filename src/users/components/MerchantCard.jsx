@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function MerchantCard({ merchant }) {
   const nav = useNavigate();
-  const BUCKET_BASE = process.env.REACT_APP_;
+  const BUCKET_BASE = process.env.REACT_APP_MEDIA_BUCKET_BASE;
 
 
   return (

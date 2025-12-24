@@ -4,7 +4,7 @@ import { merchantApi, campaignApi } from "../services/api";
 import ReactGA from "react-ga4";
 import { CacheKeys } from "../../shared/cacheKeys";
 import MerchantCampaignCard from "../components/MerchantCampaignCard";
-const BUCKET_BASE = process.env.REACT_APP_;
+const BUCKET_BASE = process.env.REACT_APP_MEDIA_BUCKET_BASE;
 
 
 /* ---------------- Analytics ---------------- */
