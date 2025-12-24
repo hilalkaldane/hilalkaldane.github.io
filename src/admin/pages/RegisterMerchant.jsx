@@ -243,76 +243,78 @@ export default function RegisterMerchant({ metadata }) {
     setLoading(true);
     setErrors({}); // clear previous submit errors
 
+    let heroKey, listKey, thumbKey;
+
     try {
-      let heroKey, listKey, thumbKey;
+      console.log("Calling presign");
 
-      try {
-        console.log("Calling presign");
+      // presign ONCE
+      const presign = await adminProtectedApi.presignMerchantImages({
+        merchantNameId: form.merchantNameId,
+        files: [
+          { name: "hero.jpg" },
+          { name: "list.jpg" },
+          { name: "thumb.jpg" },
+        ],
+      });
 
-        // presign ONCE
-        const presign = await adminProtectedApi.presignMerchantImages({
-          merchantNameId: form.merchantNameId,
-          files: [
-            { name: "hero.jpg" },
-            { name: "list.jpg" },
-            { name: "thumb.jpg" },
-          ],
-        });
+      console.log("PRESIGN RESPONSE:", presign);
 
-        console.log("PRESIGN RESPONSE:", presign);
-
-        if (
-          !presign ||
-          !presign.files ||
-          !presign.files.hero ||
-          !presign.files.list ||
-          !presign.files.thumb
-        ) {
-          throw new Error("Invalid presign response from server");
-        }
-
-        // generate images
-        const bannerImages = await generateBannerImages(
-          bannerFile,
-          bannerOffset,
-          bannerZoom
-        );
-        const thumbImage = await generateThumbImage(
-          thumbFile,
-          thumbOffset,
-          thumbZoom
-        );
-
-        // upload (fail-fast)
-
-        if (!bannerCropPx || !thumbCropPx) {
-          throw new Error("Please crop images before submitting");
-        }
-        await Promise.all([
-          fetch(presign.files.hero.uploadUrl, {
-            method: "PUT",
-            headers: { "Content-Type": "image/jpeg" },
-            body: bannerImages.hero,
-          }),
-          fetch(presign.files.list.uploadUrl, {
-            method: "PUT",
-            headers: { "Content-Type": "image/jpeg" },
-            body: bannerImages.list,
-          }),
-          fetch(presign.files.thumb.uploadUrl, {
-            method: "PUT",
-            headers: { "Content-Type": "image/jpeg" },
-            body: thumbImage,
-          }),
-        ]);
-
-        heroKey = presign.files.hero.key;
-        listKey = presign.files.list.key;
-        thumbKey = presign.files.thumb.key;
-      } catch (err) {
-        console.log(err.message);
-        throw new Error("Image upload failed");
+      if (
+        !presign ||
+        !presign.files ||
+        !presign.files.hero ||
+        !presign.files.list ||
+        !presign.files.thumb
+      ) {
+        throw new Error("Invalid presign response from server");
       }
+
+      // generate images
+      const bannerImages = await generateBannerImages(
+        bannerFile,
+        bannerOffset,
+        bannerZoom
+      );
+      const thumbImage = await generateThumbImage(
+        thumbFile,
+        thumbOffset,
+        thumbZoom
+      );
+
+      // upload (fail-fast)
+
+      if (!bannerCropPx || !thumbCropPx) {
+        throw new Error("Please crop images before submitting");
+      }
+      const uploadResults = await Promise.all([
+        fetch(presign.files.hero.uploadUrl, {
+          method: "PUT",
+          headers: { "Content-Type": "image/jpeg" },
+          body: bannerImages.hero,
+        }),
+        fetch(presign.files.list.uploadUrl, {
+          method: "PUT",
+          headers: { "Content-Type": "image/jpeg" },
+          body: bannerImages.list,
+        }),
+        fetch(presign.files.thumb.uploadUrl, {
+          method: "PUT",
+          headers: { "Content-Type": "image/jpeg" },
+          body: thumbImage,
+        }),
+      ]);
+
+      for (const res of uploadResults) {
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`Image upload failed: ${res.status} ${text}`);
+        }
+      }
+
+      heroKey = presign.files.hero.key;
+      listKey = presign.files.list.key;
+      thumbKey = presign.files.thumb.key;
 
       const res = await adminProtectedApi.createMerchant({
         merchantNameId: form.merchantNameId,
