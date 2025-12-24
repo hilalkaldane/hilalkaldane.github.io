@@ -71,7 +71,7 @@ export default function Explore() {
               className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
               style={{
                 backgroundImage:
-                  "url('https://lh3.googleusercontent.com/aida-public/AB6AXuBuBe4Mr_RT9gilgL4uik5lEbLbUof_o8ji-IA-TETeKj2noYFnTFJ61-UYgUM8_1MieK_K76yLXMchXuw5KRzAEpiYBKfXEpz8Lq4FEIaPM_s8mfeoDydjJ87v8Ec49XrqQ-kxJz_49rj_7rbGiQVxpCCXV0JSoSdOZKd-2QvCgTiWXesjiPkrU0kzaD51ORo-ORwc4VqnRcXsVLyDde7fqVi73SuXJdo8m9DhszKtuq80eeonAVA-1M9ZCLamYK7gApwhyRblNQ')",
+                  "url('https://images.unsplash.com/photo-1665989215795-f67f4723087d?w=600&auto=format&q=100')",
               }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />

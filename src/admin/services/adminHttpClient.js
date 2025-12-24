@@ -4,7 +4,11 @@
 import { adminLocalStorage, getOrCreateDeviceId } from "./adminDevice.js";
 import { redirectToAdminLogin } from "./adminProtectedApi.js";
 
-const API_BASE = "http://192.168.1.104:8080";
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
+if (!API_BASE_URL) {
+  throw new Error("REACT_APP_API_BASE_URL is not defined");
+}
 
 
 
@@ -39,7 +43,7 @@ export async function httpPost(path, payload) {
 }
 
 export async function adminFetch(path, options = {}) {
-  const url = `${API_BASE}${path}`;
+  const url = `${API_BASE_URL}${path}`;
   const adminDeviceId = getOrCreateDeviceId();
   const token = adminLocalStorage.getItem("adminAccessToken");
   const headers = {
@@ -66,7 +70,7 @@ export async function adminFetch(path, options = {}) {
 }
 
 export async function adminFetchRaw(path, options = {}) {
-  const url = `${API_BASE}${path}`;
+  const url = `${API_BASE_URL}${path}`;
   const token = adminLocalStorage.getItem("adminAccessToken");
 
   const res = await fetch(url, {

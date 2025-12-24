@@ -24,29 +24,6 @@ import Explore from "./users/pages/Explore";
 
 export default function App() {
   const loc = useLocation();
-  const [loading, setLoading] = useState(true);
-
-  // Run initData once on mount
-  useEffect(() => {
-    const boot = async () => {
-      try {
-        console.log("Init")   // 👈 seeds Supabase if empty
-      } catch (err) {
-        console.error("App init failed:", err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    boot();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="flex w-full items-center justify-center">
-        <p>Loading initial data...</p>
-      </div>
-    );
-  }
 
   const isMerchantRoute = loc.pathname.startsWith("/client");
   const isAdminRoute = loc.pathname.startsWith("/admin");

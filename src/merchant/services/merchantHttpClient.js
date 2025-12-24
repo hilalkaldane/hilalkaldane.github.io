@@ -5,7 +5,11 @@ import { clearMerchantAuth } from "../auth/merchantAuth";
 import { redirectToMerchantLogin } from "./merchantProtectedApi.js";
 import { getOrCreateDeviceId, merchantLocalStorage } from "./merchantDevice";
 
-const API_BASE = "http://192.168.1.104:8080";
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
+if (!API_BASE_URL) {
+  throw new Error("REACT_APP_API_BASE_URL is not defined");
+}
 
 /**
  * 🔁 Refresh access token ONCE
@@ -23,7 +27,7 @@ async function refreshMerchantToken() {
       "X-Device-Id": merchantDeviceId,
     };
 
-    const res = await fetch(`${API_BASE}/api/merchant-auth/refresh`, {
+    const res = await fetch(`${API_BASE_URL}/api/merchant-auth/refresh`, {
       method: "POST",
       headers: headers,
       body: JSON.stringify({ refreshToken }),
@@ -103,7 +107,7 @@ export async function merchantFetch(
   options = {},
   alreadyRetried = false
 ) {
-  const url = `${API_BASE}${path}`;
+  const url = `${API_BASE_URL}${path}`;
   const merchantDeviceId = getOrCreateDeviceId();
   const token = merchantLocalStorage.getItem("accessToken");
 

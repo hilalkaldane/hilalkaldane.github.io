@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 
 export default function MerchantCard({ merchant }) {
   const nav = useNavigate();
+  const BUCKET_BASE = process.env.REACT_APP_;
+
 
   return (
     <div
@@ -15,7 +17,7 @@ export default function MerchantCard({ merchant }) {
           className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
           style={{
             backgroundImage: merchant.listImage
-              ? `url(https://faydapoint-media-dev.s3.ap-south-1.amazonaws.com/${
+              ? `url(${BUCKET_BASE}${
                   merchant.listImage
                 })`
               : "none",
@@ -39,7 +41,7 @@ export default function MerchantCard({ merchant }) {
               key={item}
               className="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-500 tracking-wide capitalize"
             >
-              {item.trim()}
+              {item.trim().replace("-"," ")}
             </span>
           ))}
         </div>

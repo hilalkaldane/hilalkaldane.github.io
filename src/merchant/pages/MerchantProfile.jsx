@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { merchantProtectedApi } from "../services/merchantProtectedApi";
+const BUCKET_BASE = process.env.REACT_APP_;
 
 /* ---------- UI Helpers ---------- */
 
@@ -115,7 +116,7 @@ export default function MerchantProfile() {
           <div
             className="w-full h-56 bg-cover bg-center bg-slate-100 dark:bg-white/5"
             style={{
-              backgroundImage: `url(https://faydapoint-media-dev.s3.ap-south-1.amazonaws.com/${business.heroImage})`,
+              backgroundImage: `url(${BUCKET_BASE}${business.heroImage})`,
             }}
           />
         )}

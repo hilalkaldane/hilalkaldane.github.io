@@ -17,6 +17,7 @@ export default function FeedCampaignCard({ campaign, onClick }) {
 
   const headline = buildOfferHeadline({ offerType, discount });
   const cta = buildCtaCopy({ offerType, discount });
+  const BUCKET_BASE = process.env.REACT_APP_;
 
   return (
     <article className="relative flex flex-col bg-card-light dark:bg-card-dark rounded-3xl p-4 shadow-soft border border-border-light dark:border-border-dark active:scale-[0.99] transition-transform">
@@ -56,7 +57,7 @@ export default function FeedCampaignCard({ campaign, onClick }) {
           className="w-24 h-24 rounded-xl bg-cover bg-center bg-slate-100"
           style={{
             backgroundImage: merchantProfile
-              ? `url(https://faydapoint-media-dev.s3.ap-south-1.amazonaws.com/${merchantProfile})`
+              ? `url(${BUCKET_BASE}${merchantProfile})`
               : "none",
           }}
         />

@@ -1,7 +1,11 @@
 // services/httpClient.js
 import { getOrCreateDeviceId } from "./device";
 
-const API_BASE_URL = "http://192.168.1.104:8080";
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
+if (!API_BASE_URL) {
+  throw new Error("REACT_APP_API_BASE_URL is not defined");
+}
 
 async function request(path, options = {}) {
   const deviceId = getOrCreateDeviceId();

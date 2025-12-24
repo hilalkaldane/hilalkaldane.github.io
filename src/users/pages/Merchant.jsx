@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { merchantApi, campaignApi } from "../services/api";
-import { QRCodeCanvas } from "qrcode.react";
 import ReactGA from "react-ga4";
 import { CacheKeys } from "../../shared/cacheKeys";
-import { formatDate } from "../../shared/utilities";
-import CampaignCard from "../components/MerchantCampaignCard";
 import MerchantCampaignCard from "../components/MerchantCampaignCard";
+const BUCKET_BASE = process.env.REACT_APP_;
+
 
 /* ---------------- Analytics ---------------- */
 export const trackCampaignIssued = ({ campaignId, merchantId }) => {
@@ -186,7 +185,7 @@ export default function Merchant() {
       <div
         className="w-full h-56 bg-cover bg-center bg-slate-100 dark:bg-white/5"
         style={{
-          backgroundImage: `url(https://faydapoint-media-dev.s3.ap-south-1.amazonaws.com/${
+          backgroundImage: `url(${BUCKET_BASE}${
             merchant.heroImage || categoryImages.default
           })`,
         }}

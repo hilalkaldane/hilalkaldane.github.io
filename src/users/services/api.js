@@ -1,44 +1,6 @@
 // src/services/api.js
-import { createClient } from "@supabase/supabase-js";
-import { CATEGORIES, MERCHANTS } from "../../data/sampleData.js";
 import { httpGet, httpPost, httpPut } from "./httpClient.js";
 
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
-const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
-export const supabase = createClient(supabaseUrl, supabaseKey);
-const API_BASE_URL = "http://192.168.1.104:8080"
-
-// --- INIT DATA ---
-export async function initData() {
-  try {
-    await supabase.from("campaigns").delete().neq("id", 0);
-    await supabase.from("merchants").delete().neq("id", 0);
-    await supabase.from("categories").delete().neq("id", "");
-
-    // Categories
-    const { data: existingCats } = await supabase.from("categories").select("id,label,image");
-    const existingIds = existingCats.map(c => c.id);
-    const catsToInsert = CATEGORIES.filter(c => !existingIds.includes(c.id)).map(c => ({
-      id: String(c.id),
-      label: c.label,
-      image: c.image || null,
-    }));
-    if (catsToInsert.length) await supabase.from("categories").insert(catsToInsert);
-
-    // Merchants
-    const { data: existingMers } = await supabase.from("merchants").select("name");
-    const existingNames = existingMers.map(m => m.name);
-    const mersToInsert = MERCHANTS.filter(m => !existingNames.includes(m.name)).map(({ category, ...rest }) => ({
-      ...rest,
-      category_id: String(category),
-    }));
-    if (mersToInsert.length) await supabase.from("merchants").insert(mersToInsert);
-
-    console.log("✅ Seed completed (idempotent)");
-  } catch (err) {
-    console.error("❌ initData failed:", err.message);
-  }
-}
 
 // ---------------- CATEGORY API ----------------
 export const metadataApi = {
@@ -94,13 +56,3 @@ export const customerApi = {
   updateMe: (payload) =>
     httpPut("/api/customer/updateMe", payload),
 };
-
-
-function generateRandomCode(length = 8) {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let result = "";
-  for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
