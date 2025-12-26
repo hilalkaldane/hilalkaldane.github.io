@@ -33,10 +33,10 @@ export default function FeedCampaignCard({ campaign, onClick }) {
             {merchantName}
           </h3>
 
-          {/* Description */}
-          {description && (
-            <p className="text-text-subtle text-sm font-medium mb-3 line-clamp-1">
-              {description}
+          {/* Title */}
+          {title && (
+            <p className="text-text-subtle text-sm font-medium mb-3 line-clamp-2">
+              {title}
             </p>
           )}
 

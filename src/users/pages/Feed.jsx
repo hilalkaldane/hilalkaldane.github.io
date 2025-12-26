@@ -34,8 +34,8 @@ const FEED_TIPS = [
   {
     icon: "🔥",
     title: "Trending Deals",
-    subtitle: "Only best of the deals are shown here."
-  }
+    subtitle: "Only best of the deals are shown here.",
+  },
 ];
 
 /* ================== INFO CARD ================== */
@@ -113,10 +113,17 @@ export default function Feed() {
 
   const isCacheExpired = (cache) => {
     if (!cache) return true;
+
+    // Empty feed is terminal until TTL
+    if (cache.isEmpty) {
+      return Date.now() - cache.storedAt > CacheTTL.HALF;
+    }
+
     if (cache.nextWindow) {
       const nextTs = Date.parse(cache.nextWindow);
       if (!Number.isNaN(nextTs)) return Date.now() > nextTs;
     }
+
     return Date.now() - cache.storedAt > CacheTTL.HALF;
   };
 
@@ -145,11 +152,13 @@ export default function Feed() {
   };
 
   const setCacheAsInitial = (paged) => {
+    const items = paged?.items ?? [];
     writeCache({
       version: paged?.version ?? null,
       nextWindow: paged?.nextWindow ?? null,
       storedAt: Date.now(),
-      pages: { 0: paged?.items ?? [] },
+      isEmpty: items.length === 0,
+      pages: { 0: items },
     });
   };
 

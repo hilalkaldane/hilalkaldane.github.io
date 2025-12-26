@@ -272,6 +272,9 @@ export default function Merchant() {
               campaign={c}
               issuedState={campaignCouponState[c.id]}
               merchantKey={merchant.merchantNameId}
+              merchantName={merchant.name}
+              lat={merchant.loc[0]}
+              lng={merchant.loc[1]}
               onIssue={issueCouponForCampaign}
             />
           ))}

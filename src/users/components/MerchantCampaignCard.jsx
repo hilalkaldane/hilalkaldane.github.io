@@ -1,12 +1,16 @@
 import React, { useState, useMemo } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { buildOfferHeadline, buildCtaCopy } from "../services/campaignCopy";
+import { formatDate } from "../../shared/utilities";
 
 export default function MerchantCampaignCard({
   campaign,
   issuedState,
   onIssue,
   merchantKey,
+  merchantName,
+  lat,
+  lng,
 }) {
   const {
     id,
@@ -22,7 +26,6 @@ export default function MerchantCampaignCard({
 
   const isCoupon = campaignType === "COUPON";
   const [showTerms, setShowTerms] = useState(true);
-
   const safeIssuedState = issuedState ?? {};
 
   /* ---------- Offer copy ---------- */
@@ -36,8 +39,35 @@ export default function MerchantCampaignCard({
     return Math.ceil(diff / (1000 * 60 * 60));
   }, [validUntil]);
 
-  const isUrgent = hoursLeft !== null && hoursLeft <= 48;
+  const buildMapsUrl = ({ lat, lng }) => {
+    if (lat == null || lng == null) return null;
+    return `https://maps.google.com/?q=${lat},${lng}`;
+  };
 
+  const isUrgent = hoursLeft !== null && hoursLeft <= 48;
+  const shareCampaign = ({
+    headline,
+    merchantName,
+    lat,
+    lng
+  }) => {
+    const mapsUrl = buildMapsUrl({ lat, lng });
+
+    const lines = [
+      `🔥 ${headline} at ${merchantName}`,
+      " ",
+      `Offer Name: ${title ? title : ""}`,
+      " ",
+      mapsUrl ? `📍 Location: ${mapsUrl}` : "",
+      " ",
+      "Issued via FaydaPoint https://www.faydapoint.com?utm_source=whatsapp&utm_medium=share",
+    ].filter(Boolean);
+
+    const text = lines.join("\n");
+    const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+
+    window.open(waUrl, "_blank");
+  };
   return (
     <article className="relative rounded-2xl bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark p-4 shadow-soft space-y-3">
       {/* URGENCY BADGE */}
@@ -63,9 +93,11 @@ export default function MerchantCampaignCard({
       </div>
 
       {/* META */}
-      <div className="flex items-center gap-3 text-xs text-text-subtle">
+      <div className="flex items-center gap-3 text-sm text-text-subtle">
         {mov > 0 && (
-          <span className="font-semibold text-orange-600">Min bill ₹{mov}</span>
+          <span className="font-semibold text-orange-600">
+            Minimum bill amount ₹{mov}
+          </span>
         )}
         {validUntil && (
           <span>
@@ -135,10 +167,10 @@ export default function MerchantCampaignCard({
 
             {/* QR DRAWER */}
             <div
-              className={`absolute inset-0 flex flex-col items-center justify-center gap-2
-          transition-transform duration-300 ease-out
-          ${safeIssuedState.code ? "translate-y-0" : "translate-y-full"}
-        `}
+              className={`absolute inset-0 flex flex-col items-center justify-center gap-3
+    transition-transform duration-300 ease-out
+    ${safeIssuedState.code ? "translate-y-0" : "translate-y-full"}
+  `}
             >
               {safeIssuedState.code && (
                 <>
@@ -150,11 +182,35 @@ export default function MerchantCampaignCard({
                       couponCode: safeIssuedState.code,
                     })}
                   />
-                  <p className="text-xs text-orange-600 text-center font-medium">
-                    Coupon unlocked 🎉
-                    <br />
-                    Show before billing
-                  </p>
+
+                  {/* QR ACTION ROW */}
+                  <div className="flex items-center gap-3">
+                    <p className="text-xs text-orange-600 text-center font-medium">
+                      Show before billing
+                    </p>
+
+                    <button
+                      onClick={() =>
+                        shareCampaign({
+                          headline,
+                          title,
+                          merchantName,
+                          lat,
+                          lng
+                        })
+                      }
+                      className="flex items-center gap-1 rounded-full
+                     border border-border-light dark:border-border-dark
+                     px-3 py-1 text-xs font-semibold
+                     text-text-subtle hover:bg-black/5 dark:hover:bg-white/10"
+                      aria-label="Share deal"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">
+                        share
+                      </span>
+                      Share
+                    </button>
+                  </div>
                 </>
               )}
             </div>
