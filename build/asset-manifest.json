@@ -1,14 +1,14 @@
 {
   "files": {
-    "main.css": "/static/css/main.bf508ea4.css",
-    "main.js": "/static/js/main.d90089a6.js",
+    "main.css": "/static/css/main.30a0db8e.css",
+    "main.js": "/static/js/main.c7befc1b.js",
     "static/media/abaya.png": "/static/media/abaya.e64747e065576f221387.png",
     "index.html": "/index.html",
-    "main.bf508ea4.css.map": "/static/css/main.bf508ea4.css.map",
-    "main.d90089a6.js.map": "/static/js/main.d90089a6.js.map"
+    "main.30a0db8e.css.map": "/static/css/main.30a0db8e.css.map",
+    "main.c7befc1b.js.map": "/static/js/main.c7befc1b.js.map"
   },
   "entrypoints": [
-    "static/css/main.bf508ea4.css",
-    "static/js/main.d90089a6.js"
+    "static/css/main.30a0db8e.css",
+    "static/js/main.c7befc1b.js"
   ]
 }

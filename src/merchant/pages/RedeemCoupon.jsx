@@ -75,7 +75,7 @@ export default function RedeemCoupon() {
   };
 
   return (
-    <div className="mx-auto max-w-md space-y-4 p-4">
+    <div className="mx-auto max-w-md space-y-4 p-4 ">
 
       {/* Header */}
       <div className="rounded-lg border bg-white p-4">

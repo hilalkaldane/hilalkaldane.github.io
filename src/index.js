@@ -5,6 +5,9 @@ import App from "./App";
 import "./index.css";
 import ReactGA from 'react-ga4'
 import { AnalyticsTracker } from "./AnalyticsTracker";
+import * as serviceWorkerRegistration from "./serviceWorkerRegistration.js";
+
+serviceWorkerRegistration.register();
 
 
 ReactGA.initialize('G-T6CZTM2KPY',

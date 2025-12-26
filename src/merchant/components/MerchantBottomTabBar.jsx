@@ -16,7 +16,7 @@ export default function MerchantBottomTabBar() {
     },
     {
       to: "/client/redeem-coupon",
-      label: "Validate",
+      label: "Scan QR",
       icon: <FiCheckSquare />,
       roles: ["OWNER", "EMPLOYEE"],
     },
