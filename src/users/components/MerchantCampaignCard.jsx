@@ -84,7 +84,7 @@ export default function MerchantCampaignCard({
 
       {/* TITLE + DESCRIPTION */}
       <div className="space-y-0.5">
-        <h3 className="text-[15px] font-semibold leading-snug">{title}</h3>
+        <h3 className="text-[15px] font-semibold leading-snug dark:text-white">{title}</h3>
         {description && (
           <p className="text-sm text-text-subtle leading-snug line-clamp-2">
             {description}

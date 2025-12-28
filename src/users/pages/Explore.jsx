@@ -144,7 +144,7 @@ export default function Explore() {
             </div>
           </div>
 
-          <div className="group relative overflow-hidden rounded-3xl shadow-soft aspect-[4/5] active:scale-[0.98] transition-transform border border-white/40 dark:border-white/5" onClick={() => navigate(`/discover/modesty-wear`)}>
+          <div className="group relative overflow-hidden rounded-3xl shadow-soft aspect-[4/5] active:scale-[0.98] transition-transform border border-white/40 dark:border-white/5" onClick={() => navigate(`/discover/modest-wear`)}>
             <div
               className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
               style={{
@@ -158,7 +158,7 @@ export default function Explore() {
                 spa
               </span>
               <h2 className="text-[17px] font-bold text-white leading-tight">
-                Modesty Wear
+                Modest Wear
               </h2>
               <p className="text-[14px] text-slate-200 mt-1 font-medium">
                 Eid Special
