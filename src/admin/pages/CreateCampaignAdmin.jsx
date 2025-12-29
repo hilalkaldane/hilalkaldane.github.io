@@ -7,8 +7,8 @@ import { redirectToAdminLogin } from "../services/adminProtectedApi";
 const TERMS_REGEX = /^[a-zA-Z0-9\s\-,.\(\)]*$/;
 
 export default function CreateCampaignAdmin() {
-    const adminToken = adminLocalStorage.getItem("adminAccessToken");
-    if (!adminToken) redirectToAdminLogin();
+  const adminToken = adminLocalStorage.getItem("adminAccessToken");
+  if (!adminToken) redirectToAdminLogin();
   /* ---------------- MERCHANT ---------------- */
 
   const { state } = useLocation();
@@ -55,7 +55,6 @@ export default function CreateCampaignAdmin() {
     const end = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
     setValidUntilDate(end);
   }, []);
-
 
   /* ---------------- LOAD ACTIVE CAMPAIGNS ---------------- */
 
@@ -106,6 +105,12 @@ export default function CreateCampaignAdmin() {
     setCreated(null);
   };
 
+  useEffect(() => {
+    if (offerMode === "FIXED") {
+      setMinimumOrderValue("");
+    }
+  }, [offerMode]);
+
   /* ---------------- SUBMIT ---------------- */
 
   const submit = async () => {
@@ -131,11 +136,14 @@ export default function CreateCampaignAdmin() {
       }
     }
 
-    const mov = Number(minimumOrderValue);
-    if (Number.isNaN(mov) || mov < 0) {
-      return showError("Minimum spend must be ≥ 0.");
-    }
+    let mov = 0;
 
+    if (offerMode === "FLAT" || offerMode === "PERCENTAGE") {
+      mov = Number(minimumOrderValue);
+      if (Number.isNaN(mov) || mov <= 0) {
+        return showError("Minimum order value must be greater than 0.");
+      }
+    }
     let offerType;
     let parameters = {};
 
@@ -264,7 +272,10 @@ export default function CreateCampaignAdmin() {
   return (
     <div className="flex justify-center p-4">
       <div className="w-full max-w-md rounded-2xl border bg-white p-4">
-        <h2 className="mb-3 text-lg font-semibold">Create Campaign (Admin) for Merchant </h2><span className="text-blue-700 center">{merchantNameId}</span>
+        <h2 className="mb-3 text-lg font-semibold">
+          Create Campaign (Admin) for Merchant{" "}
+        </h2>
+        <span className="text-blue-700 center">{merchantNameId}</span>
 
         {/* WARNINGS */}
         {campaignType === "COUPON" && activeCoupons.length >= 3 && (

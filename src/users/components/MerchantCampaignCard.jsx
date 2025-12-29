@@ -22,11 +22,13 @@ export default function MerchantCampaignCard({
     termsConditions = [],
     mov,
     campaignType,
+    category,
   } = campaign;
 
   const isCoupon = campaignType === "COUPON";
-  const [showTerms, setShowTerms] = useState(true);
+  const [showTerms, setShowTerms] = useState(false);
   const safeIssuedState = issuedState ?? {};
+  const shouldDisplayMov = offerType != "FIXED";
 
   /* ---------- Offer copy ---------- */
   const headline = buildOfferHeadline({ offerType, discount });
@@ -63,6 +65,51 @@ export default function MerchantCampaignCard({
 
     window.open(waUrl, "_blank");
   };
+
+  const SYSTEM_TERMS = {
+    FIXED_ORDER: [
+      "Mention FaydaPoint before ordering",
+      "Final bill already includes this deal",
+      "Show QR at billing (for loyalty points)",
+    ],
+
+    MENU_NOTE: [
+      "Mention FaydaPoint before ordering",
+      "Free / discounted item applies only to listed menu items",
+      "You may order other items as well",
+      "Show QR at billing (for loyalty points)",
+    ],
+
+    BARGAINING: [
+      "Mention FaydaPoint before bargaining",
+      "Final price must include the deal",
+      "Show QR at billing (for tracking & loyalty)",
+    ],
+  };
+  const resolvedTerms = useMemo(() => {
+    const terms = [];
+
+    // Case 1: Non-food → bargaining
+    if (category !== "food") {
+      terms.push(...SYSTEM_TERMS.BARGAINING);
+      return terms;
+    }
+
+    // Case 2: Food + menu-based (FIXED)
+    if (offerType === "FIXED") {
+      terms.push(...SYSTEM_TERMS.MENU_NOTE);
+      return terms;
+    }
+
+    // Case 3: Food + flat / percentage
+    if (offerType === "FLAT" || offerType === "PERCENTAGE") {
+      terms.push(...SYSTEM_TERMS.FIXED_ORDER);
+      return terms;
+    }
+
+    return terms;
+  }, [category, offerType]);
+
   return (
     <article className="relative rounded-xl bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark p-4 shadow-soft space-y-3">
       {/* URGENCY BADGE */}
@@ -73,9 +120,10 @@ export default function MerchantCampaignCard({
       )}
 
       {/* PRIMARY HOOK */}
-      <div className="text-primary text-xl font-black leading-tight">
+      <div className="text-primary text-[22px] font-extrabold leading-snug tracking-tight">
         {headline}
       </div>
+      <div className="h-px bg-border-light dark:bg-border-dark opacity-50" />
 
       {/* TITLE + DESCRIPTION */}
       <div className="space-y-0.5">
@@ -91,9 +139,12 @@ export default function MerchantCampaignCard({
 
       {/* META */}
       <div className="flex items-center gap-3 text-sm text-text-subtle">
-        {mov > 0 && (
-          <span className="font-semibold text-orange-600">
-            Minimum bill amount ₹{mov}
+        {shouldDisplayMov && mov > 0 && (
+          <span
+            className="inline-flex items-center gap-1 rounded-full
+  bg-orange-50 text-orange-700 px-3 py-1 text-xs font-semibold"
+          >
+            Min bill ₹{mov}
           </span>
         )}
         {validUntil && (
@@ -108,18 +159,18 @@ export default function MerchantCampaignCard({
       </div>
 
       {/* TERMS (COLLAPSIBLE) */}
-      {termsConditions.length > 0 && (
+      {resolvedTerms.length > 0 && (
         <div>
           <button
-            onClick={() => setShowTerms((v) => !v)}
-            className="text-xs font-semibold text-text-subtle underline"
+            onClick={() => setShowTerms(!showTerms)}
+            className="mt-1 text-[11px] text-text-subtle underline underline-offset-2"
           >
-            {showTerms ? "Hide terms" : "View terms"}
+            {showTerms ? "Hide conditions" : "View conditions"}
           </button>
 
           {showTerms && (
             <ul className="mt-2 space-y-1">
-              {termsConditions.map((t, i) => (
+              {resolvedTerms.map((t, i) => (
                 <li key={i} className="text-xs text-text-subtle">
                   • {t}
                 </li>
@@ -129,14 +180,28 @@ export default function MerchantCampaignCard({
         </div>
       )}
 
-      <p className="text-xs text-text-subtle mt-1">
-        No payment on app. Pay directly at the shop.
-      </p>
+      <div className="pt-2 border-t border-border-light dark:border-border-dark space-y-1">
+        <p className="text-[11px] uppercase tracking-wide text-text-subtle/70">
+          How it works
+        </p>
+
+        <p className="flex items-center gap-1 text-xs text-text-subtle">
+          <span className="material-symbols-outlined text-[14px]">
+            payments
+          </span>
+          Pay directly at the shop. No payment on app.
+        </p>
+
+        <p className="flex items-center gap-1 text-xs text-text-subtle">
+          <span className="material-symbols-outlined text-[14px]">qr_code</span>
+          Show the QR to the merchant at billing
+        </p>
+      </div>
 
       {/* CTA / POST-ISSUANCE */}
       <div
         className={`pt-2 relative overflow-hidden transition-[min-height] duration-300
-    ${safeIssuedState.code ? "min-h-[180px]" : "min-h-[52px]"}
+    ${safeIssuedState.code ? "min-h-[260px]" : "min-h-[52px]"}
   `}
       >
         {" "}
@@ -160,21 +225,32 @@ export default function MerchantCampaignCard({
               <button
                 onClick={() => onIssue(id)}
                 disabled={safeIssuedState.loading}
-                className="w-full rounded-full bg-primary hover:bg-primary-dark py-2.5 text-sm font-bold text-white disabled:opacity-60"
+                className="w-full rounded-lg bg-primary hover:bg-primary-dark py-2.5 text-sm font-bold text-white disabled:opacity-60"
               >
                 {safeIssuedState.loading ? "Generating…" : cta}
               </button>
             </div>
 
+            {!safeIssuedState.code && (
+              <p className="mt-1 text-[11px] text-text-subtle text-center">
+                QR shown after clicking
+              </p>
+            )}
+
             {/* QR DRAWER */}
             <div
-              className={`absolute inset-0 flex flex-col items-center justify-center gap-3
-    transition-transform duration-300 ease-out
-    ${safeIssuedState.code ? "translate-y-0" : "translate-y-full"}
-  `}
+              className={`absolute inset-0
+  transition-transform duration-300 ease-out
+  ${safeIssuedState.code ? "translate-y-0" : "translate-y-full"}
+`}
             >
               {safeIssuedState.code && (
-                <>
+                <div
+                  className="flex flex-col items-center justify-start
+      pt-4 pb-3 px-2
+      h-full "
+                >
+                  {/* QR */}
                   <QRCodeCanvas
                     size={110}
                     value={JSON.stringify({
@@ -184,35 +260,39 @@ export default function MerchantCampaignCard({
                     })}
                   />
 
-                  {/* QR ACTION ROW */}
-                  <div className="flex items-center gap-3">
-                    <p className="text-xs text-orange-600 text-center font-medium">
-                      Show before billing
-                    </p>
+                  {/* Instruction */}
+                  <p className="mt-2 text-xs text-orange-600 font-medium text-center">
+                    Show at billing to earn loyalty points
+                  </p>
 
-                    <button
-                      onClick={() =>
-                        shareCampaign({
-                          headline,
-                          title,
-                          merchantName,
-                          lat,
-                          lng,
-                        })
-                      }
-                      className="flex items-center gap-1 rounded-full
-                     border border-border-light dark:border-border-dark
-                     px-3 py-1 text-xs font-semibold
-                     text-text-subtle hover:bg-black/5 dark:hover:bg-white/10"
-                      aria-label="Share deal"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">
-                        share
-                      </span>
-                      Share
-                    </button>
+                  {/* TERMS — NOW VISIBLE */}
+                  <div className="mt-3 w-full rounded-lg bg-slate-50 dark:bg-white/5 p-2">
+                    <p className="mb-1 text-[11px] uppercase tracking-wide text-text-subtle/70">
+                      Conditions
+                    </p>
+                    <ul className="space-y-1 text-xs text-text-subtle text-left">
+                      {resolvedTerms.map((t, i) => (
+                        <li key={i}>• {t}</li>
+                      ))}
+                    </ul>
                   </div>
-                </>
+
+                  {/* ACTION */}
+                  <button
+                    onClick={() =>
+                      shareCampaign({ headline, title, merchantName, lat, lng })
+                    }
+                    className="mt-3 flex items-center gap-1 rounded-full
+        border border-border-light dark:border-border-dark
+        px-4 py-1.5 text-xs font-semibold
+        text-text-subtle hover:bg-black/5 dark:hover:bg-white/10"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">
+                      share
+                    </span>
+                    Share
+                  </button>
+                </div>
               )}
             </div>
           </>

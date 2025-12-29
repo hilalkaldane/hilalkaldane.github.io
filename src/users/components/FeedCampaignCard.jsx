@@ -22,12 +22,12 @@ export default function FeedCampaignCard({ campaign, onClick }) {
         {/* LEFT */}
         <div className="flex flex-1 flex-col">
           {/* Offer */}
-          <span className="text-primary text-lg font-extrabold leading-tight mb-2">
+          <span className="text-primary text-lg font-extrabold leading-tight mb-1">
             {headline}
           </span>
 
           {/* Merchant */}
-          <h3 className="text-text-main-light dark:text-white text-[15px] font-semibold leading-tight line-clamp-1">
+          <h3 className="text-text-main-light dark:text-white text-[15px] font-bold leading-tight line-clamp-1">
             {merchantName}
           </h3>
 
@@ -40,8 +40,11 @@ export default function FeedCampaignCard({ campaign, onClick }) {
 
           {/* Validity */}
           {validUntil && (
-            <p className="text-text-subtle text-xs mt-2">
-              Ends{" "}
+            <p className="flex items-center gap-1 text-text-subtle text-xs mt-1">
+              <span className="material-symbols-outlined text-[14px]">
+                schedule
+              </span>
+              Till{" "}
               {new Date(validUntil).toLocaleDateString(undefined, {
                 day: "numeric",
                 month: "short",
@@ -62,12 +65,22 @@ export default function FeedCampaignCard({ campaign, onClick }) {
       </div>
 
       {/* CTA */}
-      <button
-        onClick={onClick}
-        className="mt-2 py-2 bg-primary hover:bg-primary-dark text-white text-sm font-semibold rounded-md"
-      >
-        {cta}
-      </button>
+<div
+  onClick={onClick}
+  className="
+    mt-2 flex items-center justify-between
+    rounded-md border border-border-light
+    px-3 py-2
+    text-primary text-sm font-semibold
+    transition-colors
+    hover:bg-primary/10
+  "
+>
+  <span>View details</span>
+  <span className="material-symbols-outlined text-[18px]">
+    arrow_forward
+  </span>
+</div>
     </article>
   );
 }
