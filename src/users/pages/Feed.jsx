@@ -9,13 +9,11 @@ import FeedCampaignCard from "../components/FeedCampaignCard";
 /* ================== CONSTANTS ================== */
 const PAGE_SIZE = 20;
 const TIP_SESSION_KEY = "feed_tip_shown_v1";
+const filtersEnabled = false;
+                    const showPaymentInfo = true;
+
 
 const FEED_TIPS = [
-  {
-    icon: "💡",
-    title: "Deals are free to use",
-    subtitle: "No payment here. Just show the coupon at the shop.",
-  },
   {
     icon: "🔒",
     title: "No login needed",
@@ -27,34 +25,34 @@ const FEED_TIPS = [
     subtitle: "You earn points on every successful redemption.",
   },
   {
-    icon: "🏪",
-    title: "One deal per shop",
-    subtitle: "Only one active deal per merchant is shown.",
-  },
-  {
     icon: "🔥",
     title: "Trending Deals",
     subtitle: "Only best of the deals are shown here.",
   },
+  {
+     icon: "🔥",
+    title: "Exclusive Deals",
+    subtitle: "Some deals are exlusively available on FaydaPoint only",
+  }
 ];
 
 /* ================== INFO CARD ================== */
-function FeedInfoCard({ icon, title, subtitle }) {
+function FeedInfoCard({ title, subtitle }) {
   return (
-    <div className="w-full bg-primary/10 dark:bg-primary/20 py-5">
-      <div className="mx-auto max-w-4xl px-6 flex items-start gap-4">
-        <div className="text-2xl">{icon}</div>
-        <div>
-          <p className="text-sm font-bold text-text-main-light dark:text-white">
-            {title}
+    <div className="w-full bg-slate-50 dark:bg-white/5">
+      <div className="mx-auto max-w-4xl px-6 py-3">
+        <p className="text-xs font-medium text-text-main-light dark:text-white">
+          {title}
+        </p>
+        {subtitle && (
+          <p className="mt-0.5 text-xs text-text-subtle">
+            {subtitle}
           </p>
-          <p className="mt-1 text-xs text-text-subtle">{subtitle}</p>
-        </div>
+        )}
       </div>
     </div>
   );
 }
-
 /* ================== SKELETON ================== */
 function SkeletonCard() {
   return (
@@ -262,42 +260,51 @@ export default function Feed() {
   /* ================== RENDER ================== */
   return (
     <div className="no-scrollbar mx-auto max-w-4xl">
-      <div className="px-6 py-4">
+                  {showPaymentInfo && (
+                    <FeedInfoCard
+                      icon=""
+                      title="No payment on app"
+                      subtitle="Get deal → Get QR/code → Show at shop & pay there"
+                    />
+                  )}
+      <div className="px-6 pt-4">
         <h1 className="text-2xl text-black dark:text-white font-bold">
-          Nearby Trending Deals
+          Nearby Deals
         </h1>
       </div>
 
       {/* Category Pills */}
-      <div className="flex overflow-x-auto no-scrollbar gap-3 px-6 pt-2">
-        <button
-          onClick={() => setSelectedCategoryCodes([])}
-          className={`flex-shrink-0 px-4 py-1.5 border border-border-light text-sm font-semibold rounded-full shadow-sm ${
-            isAllSelected
-              ? "bg-black dark:bg-white text-white dark:text-black"
-              : "bg-white dark:bg-black text-black dark:text-white"
-          }`}
-        >
-          All
-        </button>
+      {filtersEnabled && (
+        <div className="flex overflow-x-auto no-scrollbar gap-3 px-6 pt-2">
+          <button
+            onClick={() => setSelectedCategoryCodes([])}
+            className={`flex-shrink-0 px-4 py-1.5 border border-border-light text-sm font-semibold rounded-full shadow-sm ${
+              isAllSelected
+                ? "bg-black dark:bg-white text-white dark:text-black"
+                : "bg-white dark:bg-black text-black dark:text-white"
+            }`}
+          >
+            All
+          </button>
 
-        {categoryList.map((category) => {
-          const sel = selectedCategoryCodes.includes(category.categoryCode);
-          return (
-            <button
-              key={category.categoryCode}
-              onClick={() => toggleCategory(category.categoryCode)}
-              className={`flex-shrink-0 px-4 py-1.5 border border-border-light text-sm font-semibold rounded-full shadow-sm ${
-                sel
-                  ? "bg-black dark:bg-white text-white dark:text-black"
-                  : "bg-white dark:bg-black text-black dark:text-white"
-              }`}
-            >
-              {category.categoryName}
-            </button>
-          );
-        })}
-      </div>
+          {categoryList.map((category) => {
+            const sel = selectedCategoryCodes.includes(category.categoryCode);
+            return (
+              <button
+                key={category.categoryCode}
+                onClick={() => toggleCategory(category.categoryCode)}
+                className={`flex-shrink-0 px-4 py-1.5 border border-border-light text-sm font-semibold rounded-full shadow-sm ${
+                  sel
+                    ? "bg-black dark:bg-white text-white dark:text-black"
+                    : "bg-white dark:bg-black text-black dark:text-white"
+                }`}
+              >
+                {category.categoryName}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Feed */}
       <section className="mt-2">
@@ -313,13 +320,14 @@ export default function Feed() {
           <>
             {filtered.map((c, idx) => {
               const showTip =
-                showSessionTip && idx === Math.min(3, filtered.length - 1);
+                showSessionTip && idx === Math.min(5, filtered.length - 1);
 
               const tip =
                 FEED_TIPS[Math.floor(Date.now() / 86400000) % FEED_TIPS.length];
 
               return (
                 <React.Fragment key={String(c.campaignId)}>
+
                   {showTip && (
                     <FeedInfoCard
                       icon={tip.icon}
@@ -328,7 +336,7 @@ export default function Feed() {
                     />
                   )}
 
-                  <div className="px-6 py-3">
+                  <div className="px-6 py-2">
                     <FeedCampaignCard
                       campaign={c}
                       onClick={() => navigate(`/merchant/${c.merchantNameId}`)}
@@ -348,7 +356,7 @@ export default function Feed() {
                   ? "Loading..."
                   : hasMore
                   ? "Load more deals"
-                  : "No more deals"}
+                  : "More Deals coming soon ⏰ "}
               </button>
             </div>
           </>

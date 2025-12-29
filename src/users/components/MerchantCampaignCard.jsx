@@ -45,12 +45,7 @@ export default function MerchantCampaignCard({
   };
 
   const isUrgent = hoursLeft !== null && hoursLeft <= 48;
-  const shareCampaign = ({
-    headline,
-    merchantName,
-    lat,
-    lng
-  }) => {
+  const shareCampaign = ({ headline, merchantName, lat, lng }) => {
     const mapsUrl = buildMapsUrl({ lat, lng });
 
     const lines = [
@@ -69,7 +64,7 @@ export default function MerchantCampaignCard({
     window.open(waUrl, "_blank");
   };
   return (
-    <article className="relative rounded-2xl bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark p-4 shadow-soft space-y-3">
+    <article className="relative rounded-xl bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark p-4 shadow-soft space-y-3">
       {/* URGENCY BADGE */}
       {isUrgent && (
         <div className="absolute -top-2 right-3 rounded-full bg-red-600 px-3 py-0.5 text-[11px] font-bold text-white animate-pulse">
@@ -84,7 +79,9 @@ export default function MerchantCampaignCard({
 
       {/* TITLE + DESCRIPTION */}
       <div className="space-y-0.5">
-        <h3 className="text-[15px] font-semibold leading-snug dark:text-white">{title}</h3>
+        <h3 className="text-[15px] font-semibold leading-snug dark:text-white">
+          {title}
+        </h3>
         {description && (
           <p className="text-sm text-text-subtle leading-snug line-clamp-2">
             {description}
@@ -131,6 +128,10 @@ export default function MerchantCampaignCard({
           )}
         </div>
       )}
+
+      <p className="text-xs text-text-subtle mt-1">
+        No payment on app. Pay directly at the shop.
+      </p>
 
       {/* CTA / POST-ISSUANCE */}
       <div
@@ -196,7 +197,7 @@ export default function MerchantCampaignCard({
                           title,
                           merchantName,
                           lat,
-                          lng
+                          lng,
                         })
                       }
                       className="flex items-center gap-1 rounded-full

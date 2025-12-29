@@ -38,6 +38,53 @@ const GENDER_OPTIONS = [
   { value: "NOT_SPECIFIED", label: "Not Specified" },
 ];
 
+const FAQS = [
+  {
+    q: "Do I need to pay on the app?",
+    a: "No. You pay the merchant directly at the shop. The app does not collect any payment.",
+  },
+  {
+    q: "How do I use a deal?",
+    a: "Open a deal, get the QR/code, and show it at the shop before paying.",
+  },
+  {
+    q: "Do I need to login?",
+    a: "No login is required. Your activity is saved on this device.",
+  },
+  {
+    q: "Can I use a deal more than once?",
+    a: "Most deals are one-time use per device. This depends on the merchant’s offer.",
+  },
+  {
+    q: "What if the shop refuses the deal?",
+    a: "Deals are created by merchants. If there is any issue, please contact us at +91 8655190873",
+  },
+  {
+    q: "Who runs this app?",
+    a: "This app helps you discover nearby merchant deals. Merchants manage their own offers.",
+  },
+];
+
+function FAQItem({ q, a }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="rounded-xl bg-card-light dark:bg-card-dark p-3">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between text-left"
+      >
+        <span className="text-sm font-medium text-text-main-light dark:text-text-main-dark">
+          {q}
+        </span>
+        <span className="text-text-subtle text-sm">{open ? "–" : "+"}</span>
+      </button>
+
+      {open && <p className="mt-2 text-sm text-text-subtle">{a}</p>}
+    </div>
+  );
+}
+
 export default function Profile() {
   const [customer, setCustomer] = useState(null);
   const [name, setName] = useState("");
@@ -105,9 +152,7 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="px-4 pt-4 text-sm text-text-subtle">
-        Loading profile…
-      </div>
+      <div className="px-4 pt-4 text-sm text-text-subtle">Loading profile…</div>
     );
   }
 
@@ -182,13 +227,9 @@ export default function Profile() {
             </button>
           )}
 
-          {error && (
-            <div className="mt-1 text-xs text-red-500">{error}</div>
-          )}
+          {error && <div className="mt-1 text-xs text-red-500">{error}</div>}
           {successMessage && (
-            <div className="mt-1 text-xs text-green-500">
-              {successMessage}
-            </div>
+            <div className="mt-1 text-xs text-green-500">{successMessage}</div>
           )}
         </div>
       </div>
@@ -229,15 +270,38 @@ export default function Profile() {
         )}
       </div>
 
-      {/* Preferences */}
-      {false && (<div className="mt-6">
+      {/* FAQs */}
+      <div className="mt-8">
         <h3 className="text-sm font-semibold text-text-main-light dark:text-text-main-dark">
-          Preferences
+          FAQs
         </h3>
-        <div className="mt-2 rounded-xl bg-card-light dark:bg-card-dark p-3 text-sm text-text-subtle">
-          Manage categories and notification preferences.
+
+        <div className="mt-3 space-y-2">
+          {FAQS.map((f) => (
+            <FAQItem key={f.q} q={f.q} a={f.a} />
+          ))}
         </div>
-      </div>)}
+      </div>
+
+      {/*Contact Us*/}
+      <div className="mt-6 text-sm text-text-subtle">
+        Need help? Call us at{" "}
+        <a href="tel:+918655190873" className="underline">
+          +91 8655190873
+        </a>
+      </div>
+
+      {/* Preferences */}
+      {false && (
+        <div className="mt-6">
+          <h3 className="text-sm font-semibold text-text-main-light dark:text-text-main-dark">
+            Preferences
+          </h3>
+          <div className="mt-2 rounded-xl bg-card-light dark:bg-card-dark p-3 text-sm text-text-subtle">
+            Manage categories and notification preferences.
+          </div>
+        </div>
+      )}
     </div>
   );
 }

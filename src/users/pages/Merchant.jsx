@@ -202,7 +202,7 @@ export default function Merchant() {
         </div>
 
         {/* ---------- Merchant Info Card ---------- */}
-        <section className="mb-6 rounded-3xl bg-card-light dark:bg-card-dark p-4 shadow-soft border border-border-light dark:border-border-dark space-y-4">
+        <section className="mb-6 rounded-xl bg-card-light dark:bg-card-dark p-4 shadow-soft border border-border-light dark:border-border-dark space-y-4">
           <InfoRow icon="location_on" label="Address">
             {merchant.address}
           </InfoRow>
@@ -242,7 +242,7 @@ export default function Merchant() {
                         key={o}
                         className="px-3 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-white/10 capitalize"
                       >
-                        {o.replaceAll("_","")}
+                        {o.replaceAll("-"," ").replaceAll("_"," ")}
                       </span>
                     ))}
                   </div>
@@ -274,7 +274,7 @@ export default function Merchant() {
               merchantKey={merchant.merchantNameId}
               merchantName={merchant.name}
               lat={merchant.loc[0]}
-              lng={merchant.loc[1]}
+              l={merchant.loc[1]}
               onIssue={issueCouponForCampaign}
             />
           ))}

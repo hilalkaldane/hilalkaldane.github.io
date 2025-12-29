@@ -175,8 +175,9 @@ export default function RegisterMerchant({ metadata }) {
     if (success) setSuccess(null);
     const e = {};
 
-    if (!/^[A-Za-z ,\-'.]{2,60}$/.test(form.name))
-      e.name = "2–60 chars. Letters and , - ' . only";
+    if (!/^[A-Za-z0-9][A-Za-z0-9 &,\-'.]{1,59}$/.test(form.name)) {
+      e.name = "2–60 chars. Letters, numbers, space and & , - ' . only";
+    }
 
     if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(form.merchantNameId))
       e.merchantNameId = "3–15 chars, lowercase, '-' allowed";
