@@ -99,6 +99,7 @@ export default function Merchant() {
           validUntil: c.validUntil,
           termsConditions: c.termsConditions || [],
           campaignType: c.campaignType,
+          category: c.category
         }));
 
         mapped.sort((a, b) =>

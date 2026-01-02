@@ -10,10 +10,10 @@ import * as serviceWorkerRegistration from "./serviceWorkerRegistration.js";
 serviceWorkerRegistration.register();
 
 
-ReactGA.initialize('G-T6CZTM2KPY',
+{ process.env.REACT_APP_ENABLE_GA === "true" && ReactGA.initialize(REACT_APP_GA_MEASUREMENT_ID,
 {
   send_page_view: false,
-})
+})}
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>

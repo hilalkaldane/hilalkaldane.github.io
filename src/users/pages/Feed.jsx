@@ -11,6 +11,14 @@ const PAGE_SIZE = 20;
 const TIP_SESSION_KEY = "feed_tip_shown_v1";
 const filtersEnabled = false;
                     const showPaymentInfo = true;
+export const trackCampaignViewed = ({ campaignId, merchantId }) => {
+  if (process.env.REACT_APP_ENABLE_GA !== "true") return;
+
+  ReactGA.event("campaign_viewed", {
+    campaign_id: campaignId,
+    merchant_id: merchantId,
+  });
+};
 
 
 const FEED_TIPS = [
@@ -339,7 +347,12 @@ export default function Feed() {
                   <div className="px-6 py-2">
                     <FeedCampaignCard
                       campaign={c}
-                      onClick={() => navigate(`/merchant/${c.merchantNameId}`)}
+                      onClick={() => {
+                        const campaignId  = c.campaignId;
+                        const merchantId  = c.merchantNameId;
+                        trackCampaignViewed({campaignId, merchantId})
+                        navigate(`/merchant/${merchantId}`)}
+                      }
                     />
                   </div>
                 </React.Fragment>

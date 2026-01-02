@@ -25,6 +25,8 @@ export default function MerchantCampaignCard({
     category,
   } = campaign;
 
+  console.log(campaign);
+
   const isCoupon = campaignType === "COUPON";
   const [showTerms, setShowTerms] = useState(false);
   const safeIssuedState = issuedState ?? {};
@@ -32,7 +34,7 @@ export default function MerchantCampaignCard({
 
   /* ---------- Offer copy ---------- */
   const headline = buildOfferHeadline({ offerType, discount });
-  const cta = buildCtaCopy({ offerType, discount });
+  const cta = "Issue coupon"
 
   /* ---------- Urgency ---------- */
   const hoursLeft = useMemo(() => {
@@ -67,44 +69,42 @@ export default function MerchantCampaignCard({
   };
 
   const SYSTEM_TERMS = {
-    FIXED_ORDER: [
-      "Mention FaydaPoint before ordering",
-      "Final bill already includes this deal",
-      "Show QR at billing (for loyalty points)",
-    ],
+    COMMONS: ["Mention FaydaPoint before ordering"],
+
+    COUPON_ONLY: ["Show QR at billing (for loyalty points)"],
+
+    FIXED_ORDER: ["Final bill already includes this deal"],
 
     MENU_NOTE: [
-      "Mention FaydaPoint before ordering",
       "Free / discounted item applies only to listed menu items",
       "You may order other items as well",
-      "Show QR at billing (for loyalty points)",
     ],
 
-    BARGAINING: [
-      "Mention FaydaPoint before bargaining",
-      "Final price must include the deal",
-      "Show QR at billing (for tracking & loyalty)",
-    ],
+    BARGAINING: ["Final price must include the deal"],
   };
   const resolvedTerms = useMemo(() => {
     const terms = [];
 
+    terms.push(...termsConditions.filter((t) => t && t.trim().length > 0));
+    terms.push(...SYSTEM_TERMS.COMMONS);
+
     // Case 1: Non-food → bargaining
     if (category !== "food") {
       terms.push(...SYSTEM_TERMS.BARGAINING);
-      return terms;
     }
 
     // Case 2: Food + menu-based (FIXED)
     if (offerType === "FIXED") {
       terms.push(...SYSTEM_TERMS.MENU_NOTE);
-      return terms;
     }
 
     // Case 3: Food + flat / percentage
     if (offerType === "FLAT" || offerType === "PERCENTAGE") {
       terms.push(...SYSTEM_TERMS.FIXED_ORDER);
-      return terms;
+    }
+
+    if (isCoupon) {
+      terms.push(...SYSTEM_TERMS.COUPON_ONLY);
     }
 
     return terms;
@@ -118,6 +118,8 @@ export default function MerchantCampaignCard({
           Ends in {hoursLeft}h
         </div>
       )}
+
+      
 
       {/* PRIMARY HOOK */}
       <div className="text-primary text-[22px] font-extrabold leading-snug tracking-tight">
@@ -192,10 +194,14 @@ export default function MerchantCampaignCard({
           Pay directly at the shop. No payment on app.
         </p>
 
-        <p className="flex items-center gap-1 text-xs text-text-subtle">
-          <span className="material-symbols-outlined text-[14px]">qr_code</span>
-          Show the QR to the merchant at billing
-        </p>
+        {isCoupon && (
+          <p className="flex items-center gap-1 text-xs text-text-subtle">
+            <span className="material-symbols-outlined text-[14px]">
+              qr_code
+            </span>
+            Show the QR to the merchant at billing
+          </p>
+        )}
       </div>
 
       {/* CTA / POST-ISSUANCE */}
