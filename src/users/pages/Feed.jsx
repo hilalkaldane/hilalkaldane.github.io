@@ -10,7 +10,7 @@ import FeedCampaignCard from "../components/FeedCampaignCard";
 const PAGE_SIZE = 20;
 const TIP_SESSION_KEY = "feed_tip_shown_v1";
 const filtersEnabled = false;
-                    const showPaymentInfo = true;
+const showPaymentInfo = true;
 export const trackCampaignViewed = ({ campaignId, merchantId }) => {
   if (process.env.REACT_APP_ENABLE_GA !== "true") return;
 
@@ -19,7 +19,6 @@ export const trackCampaignViewed = ({ campaignId, merchantId }) => {
     merchant_id: merchantId,
   });
 };
-
 
 const FEED_TIPS = [
   {
@@ -38,10 +37,10 @@ const FEED_TIPS = [
     subtitle: "Only best of the deals are shown here.",
   },
   {
-     icon: "🔥",
+    icon: "🔥",
     title: "Exclusive Deals",
     subtitle: "Some deals are exlusively available on FaydaPoint only",
-  }
+  },
 ];
 
 /* ================== INFO CARD ================== */
@@ -53,9 +52,7 @@ function FeedInfoCard({ title, subtitle }) {
           {title}
         </p>
         {subtitle && (
-          <p className="mt-0.5 text-xs text-text-subtle">
-            {subtitle}
-          </p>
+          <p className="mt-0.5 text-xs text-text-subtle">{subtitle}</p>
         )}
       </div>
     </div>
@@ -268,13 +265,13 @@ export default function Feed() {
   /* ================== RENDER ================== */
   return (
     <div className="no-scrollbar mx-auto max-w-4xl">
-                  {showPaymentInfo && (
-                    <FeedInfoCard
-                      icon=""
-                      title="No payment on app"
-                      subtitle="Get deal → Get QR/code → Show at shop & pay there"
-                    />
-                  )}
+      {showPaymentInfo && (
+        <FeedInfoCard
+          icon=""
+          title="No payment on app"
+          subtitle="Get deal → Get QR/code → Show at shop & pay there"
+        />
+      )}
       <div className="px-6 pt-4">
         <h1 className="text-2xl text-black dark:text-white font-bold">
           Nearby Deals
@@ -335,7 +332,6 @@ export default function Feed() {
 
               return (
                 <React.Fragment key={String(c.campaignId)}>
-
                   {showTip && (
                     <FeedInfoCard
                       icon={tip.icon}
@@ -348,11 +344,11 @@ export default function Feed() {
                     <FeedCampaignCard
                       campaign={c}
                       onClick={() => {
-                        const campaignId  = c.campaignId;
-                        const merchantId  = c.merchantNameId;
-                        trackCampaignViewed({campaignId, merchantId})
-                        navigate(`/merchant/${merchantId}`)}
-                      }
+                        const campaignId = c.campaignId;
+                        const merchantId = c.merchantNameId;
+                        trackCampaignViewed({ campaignId, merchantId });
+                        navigate(`/merchant/${merchantId}`);
+                      }}
                     />
                   </div>
                 </React.Fragment>

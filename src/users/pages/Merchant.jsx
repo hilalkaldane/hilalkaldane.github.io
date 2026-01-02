@@ -4,7 +4,70 @@ import { merchantApi, campaignApi } from "../services/api";
 import ReactGA from "react-ga4";
 import { CacheKeys } from "../../shared/cacheKeys";
 import MerchantCampaignCard from "../components/MerchantCampaignCard";
+
 const BUCKET_BASE = process.env.REACT_APP_MEDIA_BUCKET_BASE;
+
+function MerchantSkeleton() {
+  return (
+    <>
+      {/* HERO */}
+      <div className="w-full bg-slate-100 overflow-hidden">
+        <div className="w-full h-[220px] bg-slate-200 animate-pulse" />
+      </div>
+
+      {/* CONTENT */}
+      <div className="px-6 py-4 space-y-6">
+        {/* HEADER */}
+        <div className="space-y-2">
+          <div className="h-6 w-2/3 bg-slate-200 rounded animate-pulse" />
+          <div className="h-4 w-full bg-slate-200 rounded animate-pulse" />
+        </div>
+
+        {/* INFO CARD */}
+        <section className="rounded-xl bg-card-light p-4 border border-border-light space-y-4">
+          <SkeletonRow />
+          <SkeletonRow />
+          <SkeletonRow />
+          <SkeletonRow />
+        </section>
+
+        {/* CAMPAIGNS */}
+        <section className="space-y-4">
+          <div className="h-5 w-40 bg-slate-200 rounded animate-pulse ml-2" />
+          <CampaignSkeleton />
+          <CampaignSkeleton />
+          <CampaignSkeleton />
+        </section>
+      </div>
+    </>
+  );
+}
+
+function SkeletonRow() {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="w-5 h-5 bg-slate-200 rounded-full animate-pulse" />
+      <div className="flex-1 space-y-1">
+        <div className="h-3 w-24 bg-slate-200 rounded animate-pulse" />
+        <div className="h-4 w-full bg-slate-200 rounded animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
+function CampaignSkeleton() {
+  return (
+    <div className="rounded-xl bg-card-light border border-border-light p-4 space-y-3">
+      <div className="h-6 w-3/4 bg-slate-200 rounded animate-pulse" />
+      <div className="h-4 w-1/2 bg-slate-200 rounded animate-pulse" />
+      <div className="h-4 w-full bg-slate-200 rounded animate-pulse" />
+      <div className="h-4 w-2/3 bg-slate-200 rounded animate-pulse" />
+      <div className="h-10 w-full bg-slate-200 rounded-lg animate-pulse" />
+    </div>
+  );
+}
+
+
 
 /* ---------------- Analytics ---------------- */
 export const trackCampaignIssued = ({ campaignId, merchantId }) => {
@@ -35,19 +98,16 @@ function saveIssuedCoupon(merchantNameId, campaignId, merchantName, payload) {
       couponCode: payload.couponCode,
       campaignTitle: payload.campaignTitle,
       createdAt: new Date().toISOString(),
-      merchantName: merchantName,
+      merchantName,
     };
-
     localStorage.setItem(CacheKeys.ISSUED_COUPONS, JSON.stringify(all));
   } catch {}
 }
 
-/* ---------------- Small UI helper ---------------- */
-const InfoRow = ({ icon, label, children }) => (
+/* ---------------- Emoji Info Row ---------------- */
+const InfoRow = ({ emoji, label, children }) => (
   <div className="flex items-start gap-3">
-    <span className="material-symbols-outlined text-text-subtle text-[18px]">
-      {icon}
-    </span>
+    <span className="text-lg leading-none select-none">{emoji}</span>
     <div className="text-sm">
       <div className="text-text-subtle leading-none">{label}</div>
       <div className="font-medium text-text-main-light dark:text-white">
@@ -86,20 +146,17 @@ export default function Merchant() {
         setMerchant(m);
 
         const cs = await campaignApi.listCampaignByMerchant(merchantNameId);
-
         const mapped = cs.map((c) => ({
           id: c.id,
           title: c.title,
           description: c.description,
-
           offerType: c.offerType,
           discount: c.discount ?? c.parameters?.discount ?? null,
-
           mov: c.mov,
           validUntil: c.validUntil,
           termsConditions: c.termsConditions || [],
           campaignType: c.campaignType,
-          category: c.category
+          category: c.category,
         }));
 
         mapped.sort((a, b) =>
@@ -108,7 +165,8 @@ export default function Merchant() {
 
         setCampaigns(mapped);
 
-        const merchantKey = m.merchantNameId || m.merchantId || merchantNameId;
+        const merchantKey =
+          m.merchantNameId || m.merchantId || merchantNameId;
         const stored = loadIssuedCouponsForMerchant(merchantKey);
 
         const initialState = {};
@@ -143,12 +201,11 @@ export default function Merchant() {
       const coupon = await campaignApi.issueCouponForCampaign(campaignId);
       const merchantKey =
         merchant.merchantNameId || merchant.merchantId || merchantNameId;
-      const merchantName = merchant.name || "";
-      const campaign = campaigns.find((c) => c.id === campaignId);
 
       saveIssuedCoupon(merchantKey, campaignId, merchant.name, {
         couponCode: coupon.couponCode,
-        campaignTitle: campaign?.title || "",
+        campaignTitle:
+          campaigns.find((c) => c.id === campaignId)?.title || "",
       });
 
       setCampaignCouponState((prev) => ({
@@ -174,13 +231,13 @@ export default function Merchant() {
   };
 
   /* ---------------- Render ---------------- */
-  if (loading) return <div className="p-4">Loading merchant…</div>;
+  if (loading) return <MerchantSkeleton />;
   if (!merchant)
     return <div className="p-4 text-red-500">Merchant not found</div>;
 
   return (
     <>
-      {/* ---------- FULL WIDTH HERO ---------- */}
+      {/* ---------- HERO ---------- */}
       <div className="w-full bg-slate-100 dark:bg-white/5 overflow-hidden">
         <img
           src={
@@ -189,124 +246,90 @@ export default function Merchant() {
               : categoryImages.default
           }
           alt={merchant.name}
-          className="
-      w-full
-      h-auto
-      object-contain
-    "
+          className="w-full h-auto object-contain"
+          fetchpriority="high"
         />
       </div>
 
-      {/* ---------- PADDED CONTENT ---------- */}
+      {/* ---------- CONTENT ---------- */}
       <div className="px-6 py-4">
-        {/* ---------- Header (shifted below hero) ---------- */}
+        {/* HEADER */}
         <div className="mb-4">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+          <h1 className="text-2xl font-bold tracking-tight dark:text-white">
             {merchant.name}
           </h1>
-          <p className="mt-1 text-sm text-text-subtle">{merchant.address}</p>
+          <p className="mt-1 text-sm text-text-subtle">
+            {merchant.address}
+          </p>
         </div>
 
-        {/* ---------- Merchant Info Card ---------- */}
-<section className="
-  mb-6 rounded-xl
-  bg-card-light dark:bg-card-dark
-  p-4
-  shadow-soft
-  border border-border-light dark:border-border-dark
-  space-y-5
-">
-  {/* ADDRESS */}
-  <InfoRow icon="location_on" label="Address">
-    <span className="leading-snug">
-      {merchant.address}
-    </span>
-  </InfoRow>
+        {/* INFO CARD */}
+        <section className="mb-6 rounded-xl bg-card-light dark:bg-card-dark p-4 shadow-soft border border-border-light dark:border-border-dark space-y-5">
+          <InfoRow emoji="📍" label="Address">
+            {merchant.address}
+          </InfoRow>
 
-  {/* CATEGORY */}
-  <div className="flex items-start gap-3">
-    <span className="material-symbols-outlined text-text-subtle text-[18px]">
-      category
-    </span>
-    <div>
-      <div className="text-text-subtle text-sm mb-1">
-        Category
-      </div>
-      <div className="flex gap-2 flex-wrap">
-        {merchant.category && (
-          <span className="
-            px-3 py-1 rounded-full
-            text-xs font-semibold
-            bg-accent-orange-soft text-primary
-            capitalize
-          ">
-            {merchant.category.replaceAll("-", " ")}
-          </span>
-        )}
-        {merchant.subcategory && (
-          <span className="
-            px-3 py-1 rounded-full
-            text-xs font-medium
-            bg-background-light dark:bg-white/10
-            text-text-subtle
-            capitalize
-          ">
-            {merchant.subcategory.replaceAll("-", " ")}
-          </span>
-        )}
-      </div>
-    </div>
-  </div>
+          <div className="flex items-start gap-3">
+            <span className="text-lg select-none">🏷️</span>
+            <div>
+              <div className="text-text-subtle text-sm mb-1">Category</div>
+              <div className="flex gap-2 flex-wrap">
+                {merchant.category && (
+                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-accent-orange-soft text-primary capitalize">
+                    {merchant.category.replaceAll("-", " ")}
+                  </span>
+                )}
+                {merchant.subcategory && (
+                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-background-light dark:bg-white/10 text-text-subtle capitalize">
+                    {merchant.subcategory.replaceAll("-", " ")}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
 
-  {/* SPECIALTIES */}
-  {Array.isArray(merchant.offerings) && merchant.offerings.length > 0 && (
-    <div className="flex items-start gap-3">
-      <span className="material-symbols-outlined text-text-subtle text-[18px]">
-        restaurant_menu
-      </span>
-      <div>
-        <div className="text-text-subtle text-sm mb-1">
-          Specialties
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          {merchant.offerings.map((o) => (
+          {Array.isArray(merchant.offerings) &&
+            merchant.offerings.length > 0 && (
+              <div className="flex items-start gap-3">
+                <span className="text-lg select-none">🍽️</span>
+                <div>
+                  <div className="text-text-subtle text-sm mb-1">
+                    Specialties
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    {merchant.offerings.map((o) => (
+                      <span
+                        key={o}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-background-light dark:bg-white/10 text-text-subtle capitalize"
+                      >
+                        {o.replaceAll("-", " ").replaceAll("_", " ")}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+          <InfoRow emoji="✅" label="Status">
             <span
-              key={o}
-              className="
-                px-3 py-1 rounded-full
-                text-xs font-medium
-                bg-background-light dark:bg-white/10
-                text-text-subtle
-                capitalize
-              "
+              className={`font-semibold ${
+                merchant.status === "ACTIVE"
+                  ? "text-green-600"
+                  : "text-red-600"
+              }`}
             >
-              {o.replaceAll("-", " ").replaceAll("_", " ")}
+              {merchant.status === "ACTIVE"
+                ? "Open for deals"
+                : merchant.status}
             </span>
-          ))}
-        </div>
-      </div>
-    </div>
-  )}
+          </InfoRow>
+        </section>
 
-  {/* STATUS */}
-  <InfoRow icon="verified" label="Status">
-    <span
-      className={`font-semibold ${
-        merchant.status === "ACTIVE"
-          ? "text-green-600"
-          : "text-red-600"
-      }`}
-    >
-      {merchant.status === "ACTIVE"
-        ? "Open for deals"
-        : merchant.status}
-    </span>
-  </InfoRow>
-</section>
-
-        {/* ---------- Campaigns ---------- */}
-        <section className=" space-y-5">
-          <h2 className="text-lg font-semibold px-2 dark:text-white">Available Deals</h2>
+        {/* CAMPAIGNS */}
+        <section className="space-y-5">
+          <h2 className="text-lg font-semibold px-2 dark:text-white">
+            Available Deals
+          </h2>
 
           {campaigns.map((c) => (
             <MerchantCampaignCard
@@ -316,16 +339,18 @@ export default function Merchant() {
               merchantKey={merchant.merchantNameId}
               merchantName={merchant.name}
               lat={merchant.loc[0]}
-              l={merchant.loc[1]}
+              lng={merchant.loc[1]}
               onIssue={issueCouponForCampaign}
             />
           ))}
         </section>
 
-        {/* ---------- Map ---------- */}
+        {/* MAP */}
         {getMapEmbedUrl(merchant) && (
           <section className="mt-8">
-            <h3 className="mb-2 px-2 text-lg font-semibold dark:text-white">Location</h3>
+            <h3 className="mb-2 px-2 text-lg font-semibold dark:text-white">
+              Location
+            </h3>
             <div className="overflow-hidden rounded-2xl border border-border-light dark:border-border-dark">
               <iframe
                 title="merchant-location"

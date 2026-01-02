@@ -10,7 +10,7 @@ import * as serviceWorkerRegistration from "./serviceWorkerRegistration.js";
 serviceWorkerRegistration.register();
 
 
-{ process.env.REACT_APP_ENABLE_GA === "true" && ReactGA.initialize(REACT_APP_GA_MEASUREMENT_ID,
+{ process.env.REACT_APP_ENABLE_GA === "true" && ReactGA.initialize(process.env.REACT_APP_GA_MEASUREMENT_ID,
 {
   send_page_view: false,
 })}

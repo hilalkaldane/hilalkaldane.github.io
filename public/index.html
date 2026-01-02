@@ -4,12 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Local Deals & Offers in Mumbra | FaydaPoint</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
-      rel="stylesheet"
-    />
     <link rel="manifest" href="/manifest.json" />
-    <link rel="icon" href="/favicon.ico" sizes="48x48" type="image/ico">
+    <link rel="icon" href="/favicon.ico" sizes="48x48" type="image/ico" />
     <meta
       name="description"
       content="Find exclusive, verified local deals and offers from nearby shops in Mumbra. Use coupons instantly. No signup required."
@@ -20,48 +16,10 @@
         document.documentElement.classList.add("dark");
       }
     </script>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script id="tailwind-config">
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            colors: {
-              primary: "#FF6B00",
-              "primary-dark": "#e65100",
-              "background-light": "#f2f0f2",
-              "background-dark": "#121212",
-              "card-light": "#ffffff",
-              "card-dark": "#1E1E1E",
-              "text-main-light": "#1C1C1E",
-              "text-main-dark": "#FFFFFF",
-              "text-subtle": "#8E8E93",
-              "border-light": "#F0F0F2",
-              "border-dark": "#2C2C2E",
-              "accent-orange-soft": "#FFF7ED",
-            },
-            fontFamily: {
-              display: [
-                "-apple-system",
-                "BlinkMacSystemFont",
-                "Inter",
-                "sans-serif",
-              ],
-            },
-            borderRadius: {
-              DEFAULT: "1rem",
-              lg: "1rem",
-              xl: "1.25rem",
-              "2xl": "1.5rem",
-              full: "9999px",
-            },
-            boxShadow: {
-              soft: "0 2px 12px -2px rgba(0, 0, 0, 0.04)",
-            },
-          },
-        },
-      };
-    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="%REACT_APP_API_BASE_URL%" crossorigin>
+    <link rel="stylesheet" href="/tailwind.css" />
     <style>
       .no-scrollbar::-webkit-scrollbar {
         display: none;
@@ -82,7 +40,80 @@
     </style>
   </head>
 
-  <body>
-    <div id="root"></div>
-  </body>
+<body>
+  <!-- STATIC HTML SKELETON (OVERLAY ONLY) -->
+  <div id="html-skeleton">
+    <!-- HEADER PLACEHOLDER (matches MobileHeader) -->
+    <div class="sk-header"></div>
+
+    <!-- FEED PLACEHOLDER -->
+    <div class="sk-container">
+      <div class="sk-card"></div>
+      <div class="sk-card"></div>
+      <div class="sk-card"></div>
+    </div>
+  </div>
+
+  <!-- REACT ROOT -->
+  <div id="root"></div>
+
+  <style>
+    /* =============================
+       GLOBAL RESET (SAFE)
+       ============================= */
+    body {
+      margin: 0;
+      background: #f2f0f2;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    /* =============================
+       SKELETON OVERLAY (CRITICAL)
+       ============================= */
+    #html-skeleton {
+      position: fixed;          /* 🔥 prevents CLS */
+      inset: 0;
+      background: #f2f0f2;
+      z-index: 9999;
+      pointer-events: none;
+    }
+
+    /* =============================
+       HEADER SKELETON
+       (matches h-14 / 56px)
+       ============================= */
+    .sk-header {
+      height: 56px;             /* EXACT match */
+      background: #ffffff;
+      border-bottom: 1px solid #eee;
+    }
+
+    /* =============================
+       FEED CONTAINER
+       ============================= */
+    .sk-container {
+      padding: 16px;
+    }
+
+    /* =============================
+       FEED CARD SKELETON
+       Matches FeedCampaignCard
+       ============================= */
+    .sk-card {
+      height: 150px;            /* 🔥 overshoot real card */
+      background: #e5e5ea;
+      border-radius: 16px;
+      margin-bottom: 12px;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%   { opacity: 1; }
+      50%  { opacity: 0.45; }
+      100% { opacity: 1; }
+    }
+  </style>
+</body>
+
+
 </html>

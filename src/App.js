@@ -1,72 +1,82 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, Suspense, lazy } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 
-// Customer pages
+// Customer (critical path)
+import Feed from "./users/pages/Feed";
 import Discover from "./users/pages/Discover";
-import Merchant from "./users/pages/Merchant";
+import Explore from "./users/pages/Explore";
 import Profile from "./users/pages/Profile";
 import BottomTabBar from "./users/components/BottomTabBar";
 import MobileHeader from "./users/components/MobileHeader";
 
-// Merchant pages
-import MerchantBottomTabBar from "./merchant/components/MerchantBottomTabBar";
-
-// Admin pages
-import AdminBottomTabBar from "./admin/components/AdminBottomTabBar";
-import Feed from "./users/pages/Feed";
-import MerchantApp from "./merchant/MerchantApp";
+// Guards
 import RequireMerchantAuth from "./merchant/auth/requireMerchantAuth";
-import MerchantLogin from "./merchant/pages/MerchantLogin";
-import AdminLogin from "./admin/components/AdminLogin";
 import RequireAdminAuth from "./admin/auth/requireAdminAuth";
-import AdminApp from "./admin/AdminApp";
-import Explore from "./users/pages/Explore";
+
+// Lazy-loaded routes
+const Merchant = lazy(() => import("./users/pages/Merchant"));
+const MerchantApp = lazy(() => import("./merchant/MerchantApp"));
+const AdminApp = lazy(() => import("./admin/AdminApp"));
+const MerchantLogin = lazy(() => import("./merchant/pages/MerchantLogin"));
+const AdminLogin = lazy(() => import("./admin/components/AdminLogin"));
+const MerchantBottomTabBar = lazy(() =>
+  import("./merchant/components/MerchantBottomTabBar")
+);
+const AdminBottomTabBar = lazy(() =>
+  import("./admin/components/AdminBottomTabBar")
+);
 
 export default function App() {
-  const loc = useLocation();
+  useEffect(() => {
+    document.getElementById("html-skeleton")?.remove();
+  }, []);
 
+  const loc = useLocation();
   const isMerchantRoute = loc.pathname.startsWith("/client");
   const isAdminRoute = loc.pathname.startsWith("/admin");
 
   return (
-    <div
-      className="relative min-h-screen flex w-full flex-col max-w-md mx-auto bg-background-light dark:bg-background-dark border-slate-100 dark:border-slate-800"
-    >
-      {/* Mobile header for customers only */}
+    <div className="relative min-h-screen flex w-full flex-col max-w-md mx-auto bg-background-light dark:bg-background-dark">
+      {/* Customer header only */}
       {!isMerchantRoute && !isAdminRoute && <MobileHeader />}
 
-      <main
-        className="flex-1 overflow-auto overflow-auto mb-14"
-      >
-        
-        <Routes>
-          <Route path="/merchant-login" element={<MerchantLogin/>}/>
-          <Route path="/admin-login" element={<AdminLogin/>}/>
+      <main className="flex-1 overflow-auto mb-14">
+        <Suspense fallback={null}>
+          <Routes>
+            {/* Logins */}
+            <Route path="/merchant-login" element={<MerchantLogin />} />
+            <Route path="/admin-login" element={<AdminLogin />} />
 
-          {/* Customer routes */}
-          <Route path="/" element={<Feed />} />
-          <Route path="/feed" element={<Feed />} />
-          <Route path="/discover/:category?" element={<Discover />} />
-          <Route path="/explore" element={<Explore />} />
-          <Route path="/merchant/:merchantNameId" element={<Merchant />} />
-          <Route path="/profile" element={<Profile />} />
+            {/* Customer */}
+            <Route path="/" element={<Feed />} />
+            <Route path="/feed" element={<Feed />} />
+            <Route path="/discover/:category?" element={<Discover />} />
+            <Route path="/explore" element={<Explore />} />
+            <Route path="/merchant/:merchantNameId" element={<Merchant />} />
+            <Route path="/profile" element={<Profile />} />
 
-          {/* Merchant routes */}
-        <Route element={<RequireMerchantAuth />}>
-          <Route path="/client/*" element={<MerchantApp />} />
-        </Route>
-          {/* Admin routes */}
-        <Route element={<RequireAdminAuth />}>
-          <Route path="/admin/*" element={<AdminApp />} />
-        </Route>
-        </Routes>
+            {/* Merchant */}
+            <Route element={<RequireMerchantAuth />}>
+              <Route path="/client/*" element={<MerchantApp />} />
+            </Route>
+
+            {/* Admin */}
+            <Route element={<RequireAdminAuth />}>
+              <Route path="/admin/*" element={<AdminApp />} />
+            </Route>
+          </Routes>
+        </Suspense>
       </main>
 
-      {/* Bottom tab bars by role */}
+      {/* Bottom bars */}
       {isMerchantRoute ? (
-        <MerchantBottomTabBar />
+        <Suspense fallback={null}>
+          <MerchantBottomTabBar />
+        </Suspense>
       ) : isAdminRoute ? (
-        <AdminBottomTabBar />
+        <Suspense fallback={null}>
+          <AdminBottomTabBar />
+        </Suspense>
       ) : (
         <BottomTabBar />
       )}

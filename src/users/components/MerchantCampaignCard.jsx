@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { QRCodeCanvas } from "qrcode.react";
-import { buildOfferHeadline, buildCtaCopy } from "../services/campaignCopy";
-import { formatDate } from "../../shared/utilities";
+import { buildOfferHeadline } from "../services/campaignCopy";
 
 export default function MerchantCampaignCard({
   campaign,
@@ -25,16 +24,14 @@ export default function MerchantCampaignCard({
     category,
   } = campaign;
 
-  console.log(campaign);
-
   const isCoupon = campaignType === "COUPON";
   const [showTerms, setShowTerms] = useState(false);
   const safeIssuedState = issuedState ?? {};
-  const shouldDisplayMov = offerType != "FIXED";
+  const shouldDisplayMov = offerType !== "FIXED";
 
   /* ---------- Offer copy ---------- */
   const headline = buildOfferHeadline({ offerType, discount });
-  const cta = "Issue coupon"
+  const cta = "Issue coupon";
 
   /* ---------- Urgency ---------- */
   const hoursLeft = useMemo(() => {
@@ -43,62 +40,56 @@ export default function MerchantCampaignCard({
     return Math.ceil(diff / (1000 * 60 * 60));
   }, [validUntil]);
 
+  const isUrgent = hoursLeft !== null && hoursLeft <= 48;
+
   const buildMapsUrl = ({ lat, lng }) => {
     if (lat == null || lng == null) return null;
     return `https://maps.google.com/?q=${lat},${lng}`;
   };
 
-  const isUrgent = hoursLeft !== null && hoursLeft <= 48;
   const shareCampaign = ({ headline, merchantName, lat, lng }) => {
     const mapsUrl = buildMapsUrl({ lat, lng });
 
     const lines = [
       `🔥 ${headline} at ${merchantName}`,
-      " ",
-      `Offer Name: ${title ? title : ""}`,
-      " ",
+      "",
+      title ? `Offer: ${title}` : "",
+      "",
       mapsUrl ? `📍 Location: ${mapsUrl}` : "",
-      " ",
+      "",
       "Issued via FaydaPoint https://www.faydapoint.com?utm_source=whatsapp&utm_medium=share",
     ].filter(Boolean);
 
-    const text = lines.join("\n");
-    const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
-
+    const waUrl = `https://wa.me/?text=${encodeURIComponent(lines.join("\n"))}`;
     window.open(waUrl, "_blank");
   };
 
+  /* ---------- Terms ---------- */
   const SYSTEM_TERMS = {
     COMMONS: ["Mention FaydaPoint before ordering"],
-
     COUPON_ONLY: ["Show QR at billing (for loyalty points)"],
-
     FIXED_ORDER: ["Final bill already includes this deal"],
-
     MENU_NOTE: [
       "Free / discounted item applies only to listed menu items",
       "You may order other items as well",
     ],
-
     BARGAINING: ["Final price must include the deal"],
   };
+
   const resolvedTerms = useMemo(() => {
     const terms = [];
 
     terms.push(...termsConditions.filter((t) => t && t.trim().length > 0));
     terms.push(...SYSTEM_TERMS.COMMONS);
 
-    // Case 1: Non-food → bargaining
     if (category !== "food") {
       terms.push(...SYSTEM_TERMS.BARGAINING);
     }
 
-    // Case 2: Food + menu-based (FIXED)
     if (offerType === "FIXED") {
       terms.push(...SYSTEM_TERMS.MENU_NOTE);
     }
 
-    // Case 3: Food + flat / percentage
     if (offerType === "FLAT" || offerType === "PERCENTAGE") {
       terms.push(...SYSTEM_TERMS.FIXED_ORDER);
     }
@@ -108,23 +99,22 @@ export default function MerchantCampaignCard({
     }
 
     return terms;
-  }, [category, offerType]);
+  }, [category, offerType, isCoupon, termsConditions]);
 
   return (
     <article className="relative rounded-xl bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark p-4 shadow-soft space-y-3">
       {/* URGENCY BADGE */}
       {isUrgent && (
         <div className="absolute -top-2 right-3 rounded-full bg-red-600 px-3 py-0.5 text-[11px] font-bold text-white animate-pulse">
-          Ends in {hoursLeft}h
+          ⏰ Ends in {hoursLeft}h
         </div>
       )}
-
-      
 
       {/* PRIMARY HOOK */}
       <div className="text-primary text-[22px] font-extrabold leading-snug tracking-tight">
         {headline}
       </div>
+
       <div className="h-px bg-border-light dark:bg-border-dark opacity-50" />
 
       {/* TITLE + DESCRIPTION */}
@@ -142,16 +132,13 @@ export default function MerchantCampaignCard({
       {/* META */}
       <div className="flex items-center gap-3 text-sm text-text-subtle">
         {shouldDisplayMov && mov > 0 && (
-          <span
-            className="inline-flex items-center gap-1 rounded-full
-  bg-orange-50 text-orange-700 px-3 py-1 text-xs font-semibold"
-          >
-            Min bill ₹{mov}
+          <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 text-orange-700 px-3 py-1 text-xs font-semibold">
+            💰 Min bill ₹{mov}
           </span>
         )}
         {validUntil && (
           <span>
-            Valid till{" "}
+            📅 Valid till{" "}
             {new Date(validUntil).toLocaleDateString(undefined, {
               day: "numeric",
               month: "short",
@@ -182,81 +169,59 @@ export default function MerchantCampaignCard({
         </div>
       )}
 
+      {/* HOW IT WORKS */}
       <div className="pt-2 border-t border-border-light dark:border-border-dark space-y-1">
         <p className="text-[11px] uppercase tracking-wide text-text-subtle/70">
           How it works
         </p>
 
         <p className="flex items-center gap-1 text-xs text-text-subtle">
-          <span className="material-symbols-outlined text-[14px]">
-            payments
-          </span>
-          Pay directly at the shop. No payment on app.
+          💳 Pay directly at the shop. No payment on app.
         </p>
 
         {isCoupon && (
           <p className="flex items-center gap-1 text-xs text-text-subtle">
-            <span className="material-symbols-outlined text-[14px]">
-              qr_code
-            </span>
-            Show the QR to the merchant at billing
+            🔳 Show the QR to the merchant at billing
           </p>
         )}
       </div>
 
       {/* CTA / POST-ISSUANCE */}
-      <div
-        className={`pt-2 relative overflow-hidden transition-[min-height] duration-300
-    ${safeIssuedState.code ? "min-h-[260px]" : "min-h-[52px]"}
-  `}
-      >
-        {" "}
-        {/* NON-COUPON */}
+      <div className="pt-2">
         {!isCoupon && (
           <p className="text-s text-text-subtle font-medium">
             Listing-only deal. Visit the shop directly.
           </p>
         )}
-        {/* COUPON */}
+
         {isCoupon && (
           <>
             {/* ISSUE CTA */}
-            <div
-              className={`transition-all duration-300 ${
-                safeIssuedState.code
-                  ? "opacity-0 pointer-events-none"
-                  : "opacity-100"
-              }`}
-            >
-              <button
-                onClick={() => onIssue(id)}
-                disabled={safeIssuedState.loading}
-                className="w-full rounded-lg bg-primary hover:bg-primary-dark py-2.5 text-sm font-bold text-white disabled:opacity-60"
-              >
-                {safeIssuedState.loading ? "Generating…" : cta}
-              </button>
-            </div>
-
             {!safeIssuedState.code && (
-              <p className="mt-1 text-[11px] text-text-subtle text-center">
-                QR shown after clicking
-              </p>
+              <>
+                <button
+                  onClick={() => onIssue(id)}
+                  disabled={safeIssuedState.loading}
+                  className="w-full rounded-xl bg-primary hover:bg-primary-dark py-2.5 text-sm font-bold text-white disabled:opacity-60"
+                >
+                  {safeIssuedState.loading ? "Generating…" : cta}
+                </button>
+                <p className="mt-1 text-[11px] text-text-subtle text-center">
+                  QR shown after clicking
+                </p>
+              </>
             )}
 
-            {/* QR DRAWER */}
+            {/* DRAWER (ACCORDION, NOT OVERLAY) */}
             <div
-              className={`absolute inset-0
-  transition-transform duration-300 ease-out
-  ${safeIssuedState.code ? "translate-y-0" : "translate-y-full"}
-`}
+              className={`transition-[max-height,opacity] duration-300 ease-out ${
+                safeIssuedState.code
+                  ? "max-h-[420px] opacity-100"
+                  : "max-h-0 opacity-0"
+              } overflow-hidden`}
             >
               {safeIssuedState.code && (
-                <div
-                  className="flex flex-col items-center justify-start
-      pt-4 pb-3 px-2
-      h-full "
-                >
-                  {/* QR */}
+                <div className="mt-4 flex flex-col items-center gap-3">
                   <QRCodeCanvas
                     size={110}
                     value={JSON.stringify({
@@ -266,37 +231,28 @@ export default function MerchantCampaignCard({
                     })}
                   />
 
-                  {/* Instruction */}
-                  <p className="mt-2 text-xs text-orange-600 font-medium text-center">
+                  <p className="text-xs text-orange-600 font-medium text-center">
                     Show at billing to earn loyalty points
                   </p>
 
-                  {/* TERMS — NOW VISIBLE */}
-                  <div className="mt-3 w-full rounded-lg bg-slate-50 dark:bg-white/5 p-2">
+                  <div className="w-full rounded-lg bg-slate-50 dark:bg-white/5 p-2">
                     <p className="mb-1 text-[11px] uppercase tracking-wide text-text-subtle/70">
                       Conditions
                     </p>
-                    <ul className="space-y-1 text-xs text-text-subtle text-left">
+                    <ul className="space-y-1 text-xs text-text-subtle">
                       {resolvedTerms.map((t, i) => (
                         <li key={i}>• {t}</li>
                       ))}
                     </ul>
                   </div>
 
-                  {/* ACTION */}
                   <button
                     onClick={() =>
-                      shareCampaign({ headline, title, merchantName, lat, lng })
+                      shareCampaign({ headline, merchantName, lat, lng })
                     }
-                    className="mt-3 flex items-center gap-1 rounded-full
-        border border-border-light dark:border-border-dark
-        px-4 py-1.5 text-xs font-semibold
-        text-text-subtle hover:bg-black/5 dark:hover:bg-white/10"
+                    className="flex items-center gap-1 rounded-full border border-border-light dark:border-border-dark px-4 py-1.5 text-xs font-semibold text-text-subtle hover:bg-black/5 dark:hover:bg-white/10"
                   >
-                    <span className="material-symbols-outlined text-[16px]">
-                      share
-                    </span>
-                    Share
+                    🔗 Share
                   </button>
                 </div>
               )}
