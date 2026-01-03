@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Local Deals & Offers in Mumbra | FaydaPoint</title>
     <link rel="manifest" href="/manifest.json" />
-    <link rel="icon" href="/favicon.ico" sizes="48x48" type="image/ico" />
+    <link rel="icon" href="/logo.png" type="image/png" sizes="96x96" />
     <meta
       name="description"
       content="Find exclusive, verified local deals and offers from nearby shops in Mumbra. Use coupons instantly. No signup required."
@@ -16,9 +16,28 @@
         document.documentElement.classList.add("dark");
       }
     </script>
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "FaydaPoint",
+        "url": "https://faydapoint.com/"
+      }
+    </script>
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "FaydaPoint",
+        "url": "https://faydapoint.com/",
+        "logo": "https://faydapoint.com/icons/icon-512.png"
+      }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preconnect" href="%REACT_APP_API_BASE_URL%" crossorigin>
+    <link rel="preconnect" href="%REACT_APP_API_BASE_URL%" crossorigin />
     <link rel="stylesheet" href="/tailwind.css" />
     <style>
       .no-scrollbar::-webkit-scrollbar {
@@ -40,80 +59,84 @@
     </style>
   </head>
 
-<body>
-  <!-- STATIC HTML SKELETON (OVERLAY ONLY) -->
-  <div id="html-skeleton">
-    <!-- HEADER PLACEHOLDER (matches MobileHeader) -->
-    <div class="sk-header"></div>
+  <body>
+    <!-- STATIC HTML SKELETON (OVERLAY ONLY) -->
+    <div id="html-skeleton">
+      <!-- HEADER PLACEHOLDER (matches MobileHeader) -->
+      <div class="sk-header"></div>
 
-    <!-- FEED PLACEHOLDER -->
-    <div class="sk-container">
-      <div class="sk-card"></div>
-      <div class="sk-card"></div>
-      <div class="sk-card"></div>
+      <!-- FEED PLACEHOLDER -->
+      <div class="sk-container">
+        <div class="sk-card"></div>
+        <div class="sk-card"></div>
+        <div class="sk-card"></div>
+      </div>
     </div>
-  </div>
 
-  <!-- REACT ROOT -->
-  <div id="root"></div>
+    <!-- REACT ROOT -->
+    <div id="root"></div>
 
-  <style>
-    /* =============================
+    <style>
+      /* =============================
        GLOBAL RESET (SAFE)
        ============================= */
-    body {
-      margin: 0;
-      background: #f2f0f2;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-    }
+      body {
+        margin: 0;
+        background: #f2f0f2;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      }
 
-    /* =============================
+      /* =============================
        SKELETON OVERLAY (CRITICAL)
        ============================= */
-    #html-skeleton {
-      position: fixed;          /* 🔥 prevents CLS */
-      inset: 0;
-      background: #f2f0f2;
-      z-index: 9999;
-      pointer-events: none;
-    }
+      #html-skeleton {
+        position: fixed; /* 🔥 prevents CLS */
+        inset: 0;
+        background: #f2f0f2;
+        z-index: 9999;
+        pointer-events: none;
+      }
 
-    /* =============================
+      /* =============================
        HEADER SKELETON
        (matches h-14 / 56px)
        ============================= */
-    .sk-header {
-      height: 56px;             /* EXACT match */
-      background: #ffffff;
-      border-bottom: 1px solid #eee;
-    }
+      .sk-header {
+        height: 56px; /* EXACT match */
+        background: #ffffff;
+        border-bottom: 1px solid #eee;
+      }
 
-    /* =============================
+      /* =============================
        FEED CONTAINER
        ============================= */
-    .sk-container {
-      padding: 16px;
-    }
+      .sk-container {
+        padding: 16px;
+      }
 
-    /* =============================
+      /* =============================
        FEED CARD SKELETON
        Matches FeedCampaignCard
        ============================= */
-    .sk-card {
-      height: 150px;            /* 🔥 overshoot real card */
-      background: #e5e5ea;
-      border-radius: 16px;
-      margin-bottom: 12px;
-      animation: pulse 1.4s ease-in-out infinite;
-    }
+      .sk-card {
+        height: 150px; /* 🔥 overshoot real card */
+        background: #e5e5ea;
+        border-radius: 16px;
+        margin-bottom: 12px;
+        animation: pulse 1.4s ease-in-out infinite;
+      }
 
-    @keyframes pulse {
-      0%   { opacity: 1; }
-      50%  { opacity: 0.45; }
-      100% { opacity: 1; }
-    }
-  </style>
-</body>
-
-
+      @keyframes pulse {
+        0% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.45;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+    </style>
+  </body>
 </html>
