@@ -208,6 +208,7 @@ export default function Feed() {
         const p0 = await fetchPageFromServer(0);
         setCacheAsInitial(p0.raw);
         setFeedCampaigns(p0.items);
+        setHasMore(p0.items.length >= PAGE_SIZE);
       } else {
         setFeedCampaigns(Object.values(cache.pages || {}).flat());
       }
@@ -228,7 +229,7 @@ export default function Feed() {
         persistPageToCache(nextPage, items);
       }
       setCurrentPage(nextPage);
-      setHasMore(items.length === PAGE_SIZE);
+      setHasMore(items.length >= PAGE_SIZE);
     } finally {
       setPageLoading(false);
     }
@@ -268,8 +269,7 @@ export default function Feed() {
       {showPaymentInfo && (
         <FeedInfoCard
           icon=""
-          title="No payment on app"
-          subtitle="Get deal → Get QR/code → Show at shop & pay there"
+          title="No payment • Show at shop"
         />
       )}
       <div className="px-6 pt-4">
@@ -312,7 +312,7 @@ export default function Feed() {
       )}
 
       {/* Feed */}
-      <section className="mt-2">
+      <section className="mt-0">
         {feedLoading ? (
           <>
             <SkeletonCard />
@@ -354,8 +354,8 @@ export default function Feed() {
                 </React.Fragment>
               );
             })}
-
-            <div className="mt-4 flex justify-center px-4 pb-8">
+{/* Commented when deals reach threshold of 20 */}
+{/*             <div className="mt-4 flex justify-center px-4 pb-8">
               <button
                 onClick={loadNextPage}
                 disabled={pageLoading || !hasMore}
@@ -363,14 +363,17 @@ export default function Feed() {
               >
                 {pageLoading
                   ? "Loading..."
-                  : hasMore
-                  ? "Load more deals"
-                  : "More Deals coming soon ⏰ "}
+                  : "Load more deals"}
               </button>
-            </div>
+            </div> */}
           </>
         )}
+                <FeedInfoCard
+          title=" ⏰ New deals are coming soon"
+          subtitle="Deals are updated daily"
+        />
       </section>
+
     </div>
   );
 }

@@ -3,9 +3,9 @@ export function buildOfferHeadline({ offerType, discount }) {
 
   switch (offerType) {
     case "FLAT":
-      return `FLAT ₹${discount} OFF`;
+      return `₹${discount} OFF`;
     case "FIXED":
-      return `SAVE ₹${discount}`;
+      return `₹${discount} OFF`;
     case "PERCENTAGE":
       return `${discount}% OFF`;
     default:

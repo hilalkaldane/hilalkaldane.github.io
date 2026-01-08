@@ -1,10 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: "class",
-  content: [
-    "./src/**/*.{js,jsx,ts,tsx}",
-    "./public/index.html",
-  ],
+  content: ["./src/**/*.{js,jsx,ts,tsx}", "./public/index.html"],
   theme: {
     extend: {
       colors: {
@@ -16,6 +13,8 @@ module.exports = {
         "card-dark": "#1E1E1E",
         "text-main-light": "#1C1C1E",
         "text-main-dark": "#FFFFFF",
+        "text-secondary-light": "#555555", // readable description text
+        "text-secondary-dark": "#D1D1D6",
         "text-subtle": "#8E8E93",
         "border-light": "#F0F0F2",
         "border-dark": "#2C2C2E",

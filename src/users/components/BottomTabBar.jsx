@@ -13,10 +13,10 @@ export default function BottomTabBar() {
       className="
         fixed bottom-0 z-40 w-full max-w-md mx-auto
         bg-background-light dark:bg-background-dark
-        border-t border-border-light dark:border-border-dark
+        shadow-[0_-4px_12px_rgba(0,0,0,0.06)]
       "
     >
-      <div className="h-14 px-6 flex items-center justify-around">
+      <div className="px-6 flex items-center justify-around">
         {tabs.map((t) => {
           const Icon = t.icon;
 
@@ -25,25 +25,28 @@ export default function BottomTabBar() {
               key={t.label}
               to={t.to}
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center gap-1
-                 ${
-                   isActive
-                     ? "text-primary"
-                     : "text-text-subtle"
-                 }`
+                `
+                  flex flex-col items-center justify-center
+                  py-2 min-w-[64px]
+                  transition-transform
+                  ${isActive ? "text-primary" : "text-text-subtle"}
+                `
               }
             >
               {({ isActive }) => (
                 <>
                   <Icon
                     size={18}
-                    className={isActive ? "stroke-[2.2]" : "stroke-[1.8]"}
+                    className={`
+                      transition-transform
+                      ${isActive ? "stroke-[2.2] scale-105" : "stroke-[1.8]"}
+                    `}
                   />
 
                   <span
                     className={`
-                      text-[11px] font-semibold tracking-tight
-                      ${isActive ? "text-primary" : "text-text-subtle"}
+                      text-[11px] tracking-tight
+                      ${isActive ? "font-medium" : "font-normal"}
                     `}
                   >
                     {t.label}

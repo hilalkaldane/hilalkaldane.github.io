@@ -3,8 +3,8 @@ import { Routes, Route, useLocation } from "react-router-dom";
 
 // Customer (critical path)
 import Feed from "./users/pages/Feed";
-import Discover from "./users/pages/Discover";
-import Explore from "./users/pages/Explore";
+/* import Discover from "./users/pages/Discover";
+import Explore from "./users/pages/Explore"; */
 import Profile from "./users/pages/Profile";
 import BottomTabBar from "./users/components/BottomTabBar";
 import MobileHeader from "./users/components/MobileHeader";
@@ -50,8 +50,10 @@ export default function App() {
             {/* Customer */}
             <Route path="/" element={<Feed />} />
             <Route path="/feed" element={<Feed />} />
+            {/* 
             <Route path="/discover/:category?" element={<Discover />} />
-            <Route path="/explore" element={<Explore />} />
+            <Route path="/explore" element={<Explore />} /> */
+            }
             <Route path="/merchant/:merchantNameId" element={<Merchant />} />
             <Route path="/profile" element={<Profile />} />
 

@@ -1,7 +1,7 @@
 import React from "react";
 import { buildOfferHeadline } from "../services/campaignCopy";
 
-export default function FeedCampaignCard({ campaign, onClick }) {
+export default function FeedCampaignCardHeadline({ campaign, onClick }) {
   const {
     merchantName,
     merchantProfile,
